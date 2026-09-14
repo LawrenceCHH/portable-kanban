@@ -27,7 +27,7 @@ describe('ArchiveCards page', () => {
     expect(screen.getByText('Block: Backlog')).toBeInTheDocument();
   });
 
-  it('renders distinct uid tags for cards sharing the same title', async () => {
+  it('keys cards sharing the same title by their distinct uid, without displaying it', async () => {
     const card1 = createCard({
       id: 'c1',
       uid: 'c1-unique-uid',
@@ -41,7 +41,7 @@ describe('ArchiveCards page', () => {
       archivedFromList: { id: 'l1', title: 'Backlog' },
     });
 
-    render(
+    const { container } = render(
       <Provider>
         <TestWrapper>
           <ArchiveCards cards={[card1, card2]} />
@@ -49,8 +49,11 @@ describe('ArchiveCards page', () => {
       </Provider>,
     );
 
-    expect(screen.getByText('#c1-uniqu')).toBeInTheDocument();
-    expect(screen.getByText('#c2-uniqu')).toBeInTheDocument();
+    expect(await screen.findAllByText('Duplicate Title')).toHaveLength(2);
+    expect(container.querySelector('[data-uid="c1-unique-uid"]')).not.toBeNull();
+    expect(container.querySelector('[data-uid="c2-unique-uid"]')).not.toBeNull();
+    expect(screen.queryByText('#c1-uniqu')).not.toBeInTheDocument();
+    expect(screen.queryByText('#c2-uniqu')).not.toBeInTheDocument();
   });
 
   it('Ctrl+D on a hovered card only deletes that card, even when another card shares its id', async () => {
@@ -97,9 +100,8 @@ describe('ArchiveCards page', () => {
 
     const remainingTitles = await screen.findAllByText('Duplicate Title');
     expect(remainingTitles).toHaveLength(1);
-    expect(screen.getByText('#card-2-u')).toBeInTheDocument();
-    expect(screen.queryByText('#card-1-u')).not.toBeInTheDocument();
-    expect(container).toBeTruthy();
+    expect(container.querySelector('[data-uid="card-2-uid"]')).not.toBeNull();
+    expect(container.querySelector('[data-uid="card-1-uid"]')).toBeNull();
   });
 
   it('renders empty state when no cards are archived', async () => {

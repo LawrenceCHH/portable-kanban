@@ -122,7 +122,7 @@ export const ArchiveCards = ({ cards }: Properties) => {
             </div>
           ) : (
             cards.map((c) => (
-              <ArchiveCard key={getCardUid(c)}>
+              <ArchiveCard key={getCardUid(c)} data-uid={getCardUid(c)}>
                 <Card
                   card={c}
                   isEdit={false}
@@ -132,26 +132,19 @@ export const ArchiveCards = ({ cards }: Properties) => {
                     setSelectedArchivedCard(c);
                   }}
                 />
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--dark-text-color)',
-                    marginTop: '-4px',
-                    marginBottom: '6px',
-                    paddingLeft: '4px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <span>{c.archivedFromList?.title ? `Block: ${c.archivedFromList.title}` : ''}</span>
-                  <span
-                    style={{ fontFamily: 'monospace', opacity: 0.75 }}
-                    title={`UID: ${getCardUid(c)}`}
+                {c.archivedFromList?.title && (
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--dark-text-color)',
+                      marginTop: '-4px',
+                      marginBottom: '6px',
+                      paddingLeft: '4px',
+                    }}
                   >
-                    {formatCardTag(c)}
-                  </span>
-                </div>
+                    Block: {c.archivedFromList.title}
+                  </div>
+                )}
                 <Menus>
                   <MenuItem
                     onClick={(e: React.MouseEvent<HTMLDivElement>) => {

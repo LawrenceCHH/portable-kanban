@@ -12,7 +12,7 @@ import {
   MdRestore,
 } from 'react-icons/md';
 import { styled } from 'styled-components';
-import { formatCardTag, getCardUid, type Card as CardModel } from '../utils';
+import { formatCardTag, type Card as CardModel } from '../utils';
 import { Button } from './shared/Button';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 
@@ -299,10 +299,6 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
             <span>
               <strong>Archived At:</strong> {archivedDate}
             </span>
-          </SnapshotItem>
-          <SnapshotItem>
-            <span style={{ fontWeight: 600, color: 'var(--primary-color)', fontSize: '0.8rem' }}>UID:</span>
-            <span style={{ fontFamily: 'monospace' }}>{getCardUid(card)}</span>
           </SnapshotItem>
         </SnapshotBanner>
 
