@@ -81,7 +81,7 @@
     "watch:extension": "esbuild src/extension.ts --bundle --external:vscode --platform=node --outdir=dist --format=cjs --sourcemap --watch",
     "watch:kanban": "vite build --watch",
     "package": "pnpm run build:extension && vite build --minify",
-    "vsce:package": "vsce package --no-dependencies",
+    "vsce:package": "node -e \"const fs=require('fs');fs.mkdirSync('../../versions',{recursive:true})\" && vsce package --no-dependencies --out ../../versions/",
     "lint": "oxlint src"
   },
   "devDependencies": {

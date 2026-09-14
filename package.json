@@ -20,6 +20,7 @@
     "dev:vscode": "pnpm --filter portable-kanban watch",
     "dev:web": "pnpm --filter portable-kanban-web dev",
     "dev:tui": "pnpm --filter portable-kanban-tui dev",
+    "package:vscode": "pnpm build:core && pnpm build:ui && pnpm --filter portable-kanban vsce:package",
     "lint": "pnpm -r lint",
     "test": "vitest run"
   },

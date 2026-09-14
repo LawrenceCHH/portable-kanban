@@ -4,6 +4,8 @@ node_modules
 .history
 .vscode-test/
 *.vsix
+!versions/
+!versions/*.vsix
 .vscode
 .envrc
 settings.local.json
