@@ -7,7 +7,7 @@ import { RiTaskLine } from 'react-icons/ri';
 import { Link, useLocation } from 'react-router-dom';
 import { styled } from 'styled-components';
 import { useAutoFocus } from '../hooks/useAutoFocus';
-import { type Card as CardModel } from 'portable-kanban-core';
+import { getCardUid, type Card as CardModel } from 'portable-kanban-core';
 import { actions, selectors } from '../store';
 import { TextXs } from './shared/Text';
 
@@ -173,7 +173,7 @@ export const Card = ({
   const selectedCards = selectors.useSelectedCardIds();
   const toggleSelectCard = actions.useToggleSelectCard();
   const setHoveredCard = actions.useSetHoveredCard();
-  const isCardSelected = isSelected ?? selectedCards.includes(card.id);
+  const isCardSelected = isSelected ?? selectedCards.includes(getCardUid(card));
   const [isComposing, setIsComposing] = React.useState(false);
   const [state, setState] = React.useState<{
     card: CardModel;
@@ -257,13 +257,13 @@ export const Card = ({
   return (
     <Container
       tabIndex={0}
-      title={`UID: ${state.card.uid || state.card.id}`}
+      title={`UID: ${getCardUid(state.card)}`}
       $selected={isCardSelected}
       onMouseEnter={() => {
         setHoveredCard({ card: state.card, listId: state.card.listId });
       }}
       onMouseLeave={() => {
-        setHoveredCard((curr) => (curr?.card.id === state.card.id ? null : curr));
+        setHoveredCard((curr) => (curr && getCardUid(curr.card) === getCardUid(state.card) ? null : curr));
       }}
       onClick={(e: React.MouseEvent<HTMLDivElement>) => {
         // Prevent click from bubbling up when in edit mode
@@ -283,7 +283,7 @@ export const Card = ({
           if (onSelect) {
             onSelect(state.card);
           } else {
-            toggleSelectCard(state.card.id);
+            toggleSelectCard(getCardUid(state.card));
           }
         }
       }}
@@ -301,7 +301,7 @@ export const Card = ({
             if (onSelect) {
               onSelect(state.card);
             } else {
-              toggleSelectCard(state.card.id);
+              toggleSelectCard(getCardUid(state.card));
             }
           }}
         >
@@ -337,9 +337,9 @@ export const Card = ({
           />
         ) : (
           <Link
-            key={card.id}
+            key={getCardUid(card)}
             to={{
-              pathname: `/list/${state.card.listId}/card/${state.card.id}`,
+              pathname: `/list/${state.card.listId}/card/${getCardUid(state.card)}`,
             }}
             state={{ backgroundLocation: location }}
             onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -349,7 +349,7 @@ export const Card = ({
                 if (onSelect) {
                   onSelect(state.card);
                 } else {
-                  toggleSelectCard(state.card.id);
+                  toggleSelectCard(getCardUid(state.card));
                 }
               }
             }}

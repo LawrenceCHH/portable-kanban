@@ -12,7 +12,7 @@ import {
   MdRestore,
 } from 'react-icons/md';
 import { styled } from 'styled-components';
-import { type Card as CardModel } from 'portable-kanban-core';
+import { formatCardTag, getCardUid, type Card as CardModel } from '../utils';
 import { Button } from './shared/Button';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 
@@ -252,7 +252,6 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
       // Ctrl + d / Cmd + d: directly delete without confirmation
       if (isCtrlOrCmd && keyLower === 'd') {
         e.preventDefault();
-        e.stopPropagation();
         onDelete(card);
         onClose();
         return;
@@ -261,14 +260,12 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
       // d (without Ctrl): show delete confirmation
       if (!isCtrlOrCmd && !e.altKey && keyLower === 'd') {
         e.preventDefault();
-        e.stopPropagation();
         setShowConfirmDelete(true);
         return;
       }
 
       if (e.key === 'Escape') {
         e.preventDefault();
-        e.stopPropagation();
         onClose();
       }
     };
@@ -305,7 +302,7 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
           </SnapshotItem>
           <SnapshotItem>
             <span style={{ fontWeight: 600, color: 'var(--primary-color)', fontSize: '0.8rem' }}>UID:</span>
-            <span style={{ fontFamily: 'monospace' }}>{card.uid || card.id}</span>
+            <span style={{ fontFamily: 'monospace' }}>{getCardUid(card)}</span>
           </SnapshotItem>
         </SnapshotBanner>
 
@@ -457,7 +454,7 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
       {showConfirmDelete && (
         <ConfirmDialog
           title="Delete Archived Card"
-          message={`Are you sure you want to permanently delete "${card.title || 'Untitled Card'}" (#${(card.uid || card.id).slice(0, 8)})?`}
+          message={`Are you sure you want to permanently delete "${card.title || 'Untitled Card'}" (${formatCardTag(card)})?`}
           confirmText="Delete"
           cancelText="Cancel"
           onConfirm={() => {

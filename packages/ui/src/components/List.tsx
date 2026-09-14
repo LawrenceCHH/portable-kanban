@@ -5,7 +5,13 @@ import * as React from 'react';
 import { FiPlus } from 'react-icons/fi';
 import { MdAdd, MdArchive, MdDriveFileMoveOutline, MdMenu, MdOutlineArchive, MdSortByAlpha } from 'react-icons/md';
 import { styled } from 'styled-components';
-import { type Card as CardModel, type Kanban as KanbanModel, type List as ListModel, newCard } from 'portable-kanban-core';
+import {
+  getCardUid,
+  type Card as CardModel,
+  type Kanban as KanbanModel,
+  type List as ListModel,
+  newCard,
+} from 'portable-kanban-core';
 import { actions, kanbanActions, selectors } from '../store';
 import { uuid } from 'portable-kanban-core';
 import { Card } from './Card';
@@ -108,7 +114,7 @@ const SortableCardItem = ({ card, listId }: SortableCardItemProps) => {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <Card key={card.id} card={card} />
+      <Card key={getCardUid(card)} card={card} />
     </div>
   );
 };

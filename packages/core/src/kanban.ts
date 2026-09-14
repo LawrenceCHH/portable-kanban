@@ -67,6 +67,10 @@ export type Card = {
   activities?: CardActivity[];
 };
 
+// `id` alone can collide (hand-edited files, imports, merges); `uid` is the
+// identifier every card-matching/removal path should use.
+export const getCardUid = (card: Card): string => card.uid || card.id;
+
 export type Label = {
   id: string;
   title: string;
@@ -259,31 +263,30 @@ export const updateCard = (lists: List[], list: List, card: Card): List[] => {
     l.id === list.id
       ? {
           ...list,
-          cards: list.cards.map((c) => (c.id === card.id ? card : c)),
+          cards: list.cards.map((c) => (getCardUid(c) === getCardUid(card) ? card : c)),
         }
       : l,
   );
 };
 
 export const deleteCard = (archiveCards: Card[], card: Card): Card[] => {
-  if (card.uid) {
-    return archiveCards.filter((c) => (c.uid ? c.uid !== card.uid : c.id !== card.id));
-  }
-  return archiveCards.filter((c) => c.id !== card.id);
+  const uid = getCardUid(card);
+  return archiveCards.filter((c) => getCardUid(c) !== uid);
 };
 
-export const removeCardFromList = (lists: List[], cardId: string): List[] => {
+// `cardUid` is a card's uid (falling back to id) — see getCardUid.
+export const removeCardFromList = (lists: List[], cardUid: string): List[] => {
   return lists.map((l) => ({
     ...l,
-    cards: l.cards.filter((c) => c.id !== cardId),
+    cards: l.cards.filter((c) => getCardUid(c) !== cardUid),
   }));
 };
 
-export const removeCardsFromList = (lists: List[], cardIds: string[]): List[] => {
-  const set = new Set(cardIds);
+export const removeCardsFromList = (lists: List[], cardUids: string[]): List[] => {
+  const set = new Set(cardUids);
   return lists.map((l) => ({
     ...l,
-    cards: l.cards.filter((c) => !set.has(c.id)),
+    cards: l.cards.filter((c) => !set.has(getCardUid(c))),
   }));
 };
 
@@ -384,19 +387,20 @@ export const archiveCard = (kanban: Kanban, list: List, card: Card): Kanban => {
     ...kanban,
     archive: { ...kanban.archive, cards: [...kanban.archive.cards, archivedCard] },
     lists: kanban.lists.map((l) =>
-      l.id === list.id ? { ...list, cards: l.cards.filter((c) => c.id !== card.id) } : l,
+      l.id === list.id ? { ...list, cards: l.cards.filter((c) => getCardUid(c) !== getCardUid(card)) } : l,
     ),
   };
 };
 
-export const archiveCards = (kanban: Kanban, cardIds: string[]): Kanban => {
-  if (cardIds.length === 0) return kanban;
-  const cardIdSet = new Set(cardIds);
+// `cardUids` are card uids (falling back to id) — see getCardUid.
+export const archiveCards = (kanban: Kanban, cardUids: string[]): Kanban => {
+  if (cardUids.length === 0) return kanban;
+  const cardUidSet = new Set(cardUids);
   const now = new Date().toISOString();
   const newlyArchivedCards: Card[] = [];
 
   const updatedLists = kanban.lists.map((list) => {
-    const cardsToArchive = list.cards.filter((c) => cardIdSet.has(c.id));
+    const cardsToArchive = list.cards.filter((c) => cardUidSet.has(getCardUid(c)));
     for (const card of cardsToArchive) {
       const archiveActivity: CardActivity = {
         id: uuid(),
@@ -421,7 +425,7 @@ export const archiveCards = (kanban: Kanban, cardIds: string[]): Kanban => {
 
     return {
       ...list,
-      cards: list.cards.filter((c) => !cardIdSet.has(c.id)),
+      cards: list.cards.filter((c) => !cardUidSet.has(getCardUid(c))),
     };
   });
 
@@ -464,7 +468,7 @@ export const restoreCard = (kanban: Kanban, card: Card): Kanban => {
     ...kanban,
     archive: {
       ...kanban.archive,
-      cards: kanban.archive.cards.filter((a) => a.id !== card.id),
+      cards: kanban.archive.cards.filter((a) => getCardUid(a) !== getCardUid(card)),
     },
     lists: kanban.lists.map((l) => (l.id === targetListId ? { ...l, cards: [...l.cards, restoredCard] } : l)),
   };

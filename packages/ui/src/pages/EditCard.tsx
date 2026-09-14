@@ -28,7 +28,12 @@ import { ProgressBar } from '../components/shared/ProgressBar';
 import { TextBaseBold } from '../components/shared/Text';
 import { Title } from '../components/shared/Title';
 import { Task } from '../components/Task';
-import { type CheckBox as CheckBoxModel, type Comment as CommentModel } from 'portable-kanban-core';
+import {
+  formatCardTag,
+  getCardUid,
+  type CheckBox as CheckBoxModel,
+  type Comment as CommentModel,
+} from '../utils';
 import { actions, kanbanActions, selectors } from '../store';
 import { uuid } from 'portable-kanban-core';
 
@@ -151,11 +156,11 @@ const EditCard = () => {
 
   const { listId, cardId } = useParams();
   const list = React.useMemo(() => lists.find((l) => l.id === listId), [listId, lists]);
-  const card = React.useMemo(() => list?.cards.find((c) => c.id === cardId), [cardId, list?.cards]);
+  const card = React.useMemo(() => list?.cards.find((c) => getCardUid(c) === cardId), [cardId, list?.cards]);
 
   const comments = React.useMemo(() => [...(card?.comments ?? [])].reverse(), [card]);
   const archivedCard = React.useMemo(
-    () => (card ? null : archiveCards.find((c) => c.id === cardId)),
+    () => (card ? null : archiveCards.find((c) => getCardUid(c) === cardId)),
     [card, cardId, archiveCards],
   );
   const [isArchived, setArchived] = React.useState(Boolean(archivedCard));
@@ -323,7 +328,7 @@ const EditCard = () => {
 
   const performDeleteCard = React.useCallback(() => {
     if (card) {
-      deleteActiveCard(card.id);
+      deleteActiveCard(getCardUid(card));
       navigate('/');
       getBackend().showInfoMessage(`Delete ${card.title}`);
     } else if (archivedCard) {
@@ -549,7 +554,7 @@ const EditCard = () => {
       {showDeleteConfirm && (
         <ConfirmDialog
           title="Delete Card"
-          message={`Are you sure you want to permanently delete "${(card ?? archivedCard)?.title || 'Untitled Card'}" (#${(((card ?? archivedCard)?.uid || (card ?? archivedCard)?.id) ?? '').slice(0, 8)})?`}
+          message={`Are you sure you want to permanently delete "${(card ?? archivedCard)?.title || 'Untitled Card'}"${(card ?? archivedCard) ? ` (${formatCardTag((card ?? archivedCard)!)})` : ''}?`}
           confirmText="Delete"
           cancelText="Cancel"
           onConfirm={() => {

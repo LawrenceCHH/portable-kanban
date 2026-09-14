@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { styled } from 'styled-components';
 import { Card } from '../components/Card';
 import { TextBaseBold } from '../components/shared/Text';
-import { type Card as CardModel } from 'portable-kanban-core';
+import { formatCardTag, getCardUid, type Card as CardModel } from '../utils';
 import { actions, kanbanActions, selectors } from '../store';
 
 const Overlay = styled.div`
@@ -122,7 +122,7 @@ export const ArchiveCards = ({ cards }: Properties) => {
             </div>
           ) : (
             cards.map((c) => (
-              <ArchiveCard key={c.id}>
+              <ArchiveCard key={getCardUid(c)}>
                 <Card
                   card={c}
                   isEdit={false}
@@ -147,9 +147,9 @@ export const ArchiveCards = ({ cards }: Properties) => {
                   <span>{c.archivedFromList?.title ? `Block: ${c.archivedFromList.title}` : ''}</span>
                   <span
                     style={{ fontFamily: 'monospace', opacity: 0.75 }}
-                    title={`UID: ${c.uid || c.id}`}
+                    title={`UID: ${getCardUid(c)}`}
                   >
-                    #{(c.uid || c.id).slice(0, 8)}
+                    {formatCardTag(c)}
                   </span>
                 </div>
                 <Menus>
@@ -194,7 +194,7 @@ export const ArchiveCards = ({ cards }: Properties) => {
       {cardToDelete && (
         <ConfirmDialog
           title="Delete Archived Card"
-          message={`Are you sure you want to permanently delete "${cardToDelete.title || 'Untitled Card'}" (#${(cardToDelete.uid || cardToDelete.id).slice(0, 8)})?`}
+          message={`Are you sure you want to permanently delete "${cardToDelete.title || 'Untitled Card'}" (${formatCardTag(cardToDelete)})?`}
           confirmText="Delete"
           cancelText="Cancel"
           onConfirm={() => {

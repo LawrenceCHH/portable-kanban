@@ -22,13 +22,15 @@ import { List } from '../components/List';
 import { AddItem } from '../components/shared/AddItem';
 import { ConfirmDialog } from '../components/shared/ConfirmDialog';
 import {
+  formatCardTag,
+  getCardUid,
   moveCard as moveCardFn,
   moveCardAcrossList as moveCardAcrossListFn,
   moveList as moveListFn,
   type Card as CardModel,
   type Kanban as KanbanModel,
   type List as ListModel,
-} from 'portable-kanban-core';
+} from '../utils';
 import { actions, kanbanActions, selectors } from '../store';
 import { uuid } from 'portable-kanban-core';
 
@@ -195,7 +197,7 @@ const Board = () => {
           deleteActiveCards(selectedCardIds);
           clearSelectedCards();
         } else if (hoveredCardInfo) {
-          deleteActiveCard(hoveredCardInfo.card.id);
+          deleteActiveCard(getCardUid(hoveredCardInfo.card));
         }
         return;
       }
@@ -206,17 +208,16 @@ const Board = () => {
           e.preventDefault();
           const selectedCards = lists
             .flatMap((l) => l.cards)
-            .filter((c) => selectedCardIds.includes(c.id));
+            .filter((c) => selectedCardIds.includes(getCardUid(c)));
           setDeleteConfirmation({
             cards: selectedCards,
             message: `Are you sure you want to permanently delete ${selectedCardIds.length} selected card(s)?`,
           });
         } else if (hoveredCardInfo) {
           e.preventDefault();
-          const uidTag = (hoveredCardInfo.card.uid || hoveredCardInfo.card.id).slice(0, 8);
           setDeleteConfirmation({
             cards: [hoveredCardInfo.card],
-            message: `Are you sure you want to permanently delete "${hoveredCardInfo.card.title || 'Untitled Card'}" (#${uidTag})?`,
+            message: `Are you sure you want to permanently delete "${hoveredCardInfo.card.title || 'Untitled Card'}" (${formatCardTag(hoveredCardInfo.card)})?`,
           });
         }
         return;
@@ -230,7 +231,7 @@ const Board = () => {
           clearSelectedCards();
         } else if (hoveredCardInfo) {
           e.preventDefault();
-          archiveCards([hoveredCardInfo.card.id]);
+          archiveCards([getCardUid(hoveredCardInfo.card)]);
         }
         return;
       }
@@ -239,7 +240,7 @@ const Board = () => {
       if (!isCtrlOrCmd && !e.altKey && e.key === ' ') {
         if (hoveredCardInfo) {
           e.preventDefault();
-          toggleSelectCard(hoveredCardInfo.card.id);
+          toggleSelectCard(getCardUid(hoveredCardInfo.card));
         }
         return;
       }
@@ -257,7 +258,7 @@ const Board = () => {
       if (!isCtrlOrCmd && !e.altKey && e.key === 'Enter') {
         if (hoveredCardInfo) {
           e.preventDefault();
-          navigate(`/list/${hoveredCardInfo.listId}/card/${hoveredCardInfo.card.id}`);
+          navigate(`/list/${hoveredCardInfo.listId}/card/${getCardUid(hoveredCardInfo.card)}`);
         }
         return;
       }
@@ -525,7 +526,7 @@ const Board = () => {
             onClick={() => {
               const selectedCards = lists
                 .flatMap((l) => l.cards)
-                .filter((c) => selectedCardIds.includes(c.id));
+                .filter((c) => selectedCardIds.includes(getCardUid(c)));
               setDeleteConfirmation({
                 cards: selectedCards,
                 message: `Are you sure you want to permanently delete ${selectedCardIds.length} selected card(s)?`,
@@ -551,8 +552,8 @@ const Board = () => {
           confirmText="Delete"
           cancelText="Cancel"
           onConfirm={() => {
-            const cardIds = deleteConfirmation.cards.map((c) => c.id);
-            deleteActiveCards(cardIds);
+            const cardUids = deleteConfirmation.cards.map((c) => getCardUid(c));
+            deleteActiveCards(cardUids);
             clearSelectedCards();
             setDeleteConfirmation(null);
           }}
