@@ -28,6 +28,29 @@ export type List = {
 
 export type ArchiveList = Pick<List, 'id' | 'title'>;
 
+export type CardActivityType = 'created' | 'moved' | 'archived' | 'restored';
+
+export type CardActivityDetail = {
+  fromListTitle?: string;
+  toListTitle?: string;
+  fromListId?: string;
+  toListId?: string;
+  archivedFromListTitle?: string;
+  description?: string;
+};
+
+export type CardActivity = {
+  id: string;
+  type: CardActivityType;
+  timestamp: string;
+  detail?: CardActivityDetail;
+};
+
+export type ArchivedFromList = {
+  id: string;
+  title: string;
+};
+
 export type Card = {
   id: string;
   listId: string;
@@ -37,6 +60,10 @@ export type Card = {
   labels: Label[];
   checkboxes: CheckBox[];
   comments: Comment[];
+  createdAt?: string;
+  archivedAt?: string;
+  archivedFromList?: ArchivedFromList;
+  activities?: CardActivity[];
 };
 
 export type Label = {
@@ -71,7 +98,8 @@ export const colors: ReadonlyArray<`#${string}`> = [
 
 export type Color = (typeof colors)[number];
 
-export const newCard = (id: string, listId: string) => {
+export const newCard = (id: string, listId: string, listTitle?: string): Card => {
+  const now = new Date().toISOString();
   return {
     id,
     listId,
@@ -81,6 +109,15 @@ export const newCard = (id: string, listId: string) => {
     labels: [],
     checkboxes: [],
     comments: [],
+    createdAt: now,
+    activities: [
+      {
+        id: uuid(),
+        type: 'created',
+        timestamp: now,
+        detail: listTitle ? { toListId: listId, toListTitle: listTitle } : undefined,
+      },
+    ],
   };
 };
 
@@ -110,22 +147,62 @@ export const removeArchivedList = (archivedLists: ArchiveList[], listId: string)
   archivedLists.filter((l) => l.id !== listId);
 
 export const archiveList = (kanban: Kanban, list: List): Kanban => {
+  const now = new Date().toISOString();
+  const archivedCards: Card[] = list.cards.map((c) => {
+    const archiveActivity: CardActivity = {
+      id: uuid(),
+      type: 'archived',
+      timestamp: now,
+      detail: {
+        archivedFromListTitle: list.title,
+        fromListId: list.id,
+        fromListTitle: list.title,
+      },
+    };
+    return {
+      ...c,
+      archivedAt: now,
+      archivedFromList: { id: list.id, title: list.title },
+      activities: [...(c.activities ?? []), archiveActivity],
+    };
+  });
+
   return {
     ...kanban,
     archive: {
-      lists: [...kanban.archive.lists, list],
-      cards: [...kanban.archive.cards, ...list.cards],
+      lists: [...kanban.archive.lists, { id: list.id, title: list.title }],
+      cards: [...kanban.archive.cards, ...archivedCards],
     },
     lists: kanban.lists.filter((l) => l.id !== list.id),
   };
 };
 
 export const archiveAllCardInList = (kanban: Kanban, list: List): Kanban => {
+  const now = new Date().toISOString();
+  const archivedCards: Card[] = list.cards.map((c) => {
+    const archiveActivity: CardActivity = {
+      id: uuid(),
+      type: 'archived',
+      timestamp: now,
+      detail: {
+        archivedFromListTitle: list.title,
+        fromListId: list.id,
+        fromListTitle: list.title,
+      },
+    };
+    return {
+      ...c,
+      archivedAt: now,
+      archivedFromList: { id: list.id, title: list.title },
+      activities: [...(c.activities ?? []), archiveActivity],
+    };
+  });
+
   return {
     ...kanban,
     archive: {
       ...kanban.archive,
-      cards: [...kanban.archive.cards, ...list.cards],
+      cards: [...kanban.archive.cards, ...archivedCards],
     },
     lists: kanban.lists.map((l) => (l.id === list.id ? { ...l, cards: [] } : l)),
   };
@@ -216,10 +293,24 @@ export const moveCardAcrossList = (
     return lists;
   }
 
+  const now = new Date().toISOString();
+  const moveActivity: CardActivity = {
+    id: uuid(),
+    type: 'moved',
+    timestamp: now,
+    detail: {
+      fromListId: fromList.id,
+      fromListTitle: fromList.title,
+      toListId: toList.id,
+      toListTitle: toList.title,
+    },
+  };
+
   const fromCards = fromList.cards?.filter((_, i) => i !== fromCardIndex);
   const toCards = insert(toList.cards, toCardIndex, {
     ...fromCard,
     listId: toList.id,
+    activities: [...(fromCard.activities ?? []), moveActivity],
   });
 
   return lists.map((l) =>
@@ -241,23 +332,115 @@ export const moveCard = (lists: List[], listId: string, fromCardIndex: number, t
 };
 
 export const archiveCard = (kanban: Kanban, list: List, card: Card): Kanban => {
+  const now = new Date().toISOString();
+  const archiveActivity: CardActivity = {
+    id: uuid(),
+    type: 'archived',
+    timestamp: now,
+    detail: {
+      archivedFromListTitle: list.title,
+      fromListId: list.id,
+      fromListTitle: list.title,
+    },
+  };
+
+  const archivedCard: Card = {
+    ...card,
+    archivedAt: now,
+    archivedFromList: {
+      id: list.id,
+      title: list.title,
+    },
+    activities: [...(card.activities ?? []), archiveActivity],
+  };
+
   return {
     ...kanban,
-    archive: { ...kanban.archive, cards: [...kanban.archive.cards, card] },
+    archive: { ...kanban.archive, cards: [...kanban.archive.cards, archivedCard] },
     lists: kanban.lists.map((l) =>
       l.id === list.id ? { ...list, cards: l.cards.filter((c) => c.id !== card.id) } : l,
     ),
   };
 };
 
+export const archiveCards = (kanban: Kanban, cardIds: string[]): Kanban => {
+  if (cardIds.length === 0) return kanban;
+  const cardIdSet = new Set(cardIds);
+  const now = new Date().toISOString();
+  const newlyArchivedCards: Card[] = [];
+
+  const updatedLists = kanban.lists.map((list) => {
+    const cardsToArchive = list.cards.filter((c) => cardIdSet.has(c.id));
+    for (const card of cardsToArchive) {
+      const archiveActivity: CardActivity = {
+        id: uuid(),
+        type: 'archived',
+        timestamp: now,
+        detail: {
+          archivedFromListTitle: list.title,
+          fromListId: list.id,
+          fromListTitle: list.title,
+        },
+      };
+      newlyArchivedCards.push({
+        ...card,
+        archivedAt: now,
+        archivedFromList: {
+          id: list.id,
+          title: list.title,
+        },
+        activities: [...(card.activities ?? []), archiveActivity],
+      });
+    }
+
+    return {
+      ...list,
+      cards: list.cards.filter((c) => !cardIdSet.has(c.id)),
+    };
+  });
+
+  return {
+    ...kanban,
+    archive: {
+      ...kanban.archive,
+      cards: [...kanban.archive.cards, ...newlyArchivedCards],
+    },
+    lists: updatedLists,
+  };
+};
+
 export const restoreCard = (kanban: Kanban, card: Card): Kanban => {
+  const now = new Date().toISOString();
+  const targetList = kanban.lists.find((l) => l.id === card.listId) ?? kanban.lists[0];
+  const targetListId = targetList ? targetList.id : card.listId;
+  const targetListTitle = targetList?.title;
+
+  const restoreActivity: CardActivity = {
+    id: uuid(),
+    type: 'restored',
+    timestamp: now,
+    detail: {
+      toListId: targetListId,
+      toListTitle: targetListTitle,
+      archivedFromListTitle: card.archivedFromList?.title,
+    },
+  };
+
+  const restoredCard: Card = {
+    ...card,
+    listId: targetListId,
+    archivedAt: undefined,
+    archivedFromList: undefined,
+    activities: [...(card.activities ?? []), restoreActivity],
+  };
+
   return {
     ...kanban,
     archive: {
       ...kanban.archive,
       cards: kanban.archive.cards.filter((a) => a.id !== card.id),
     },
-    lists: kanban.lists.map((l) => (l.id === card.listId ? { ...l, cards: [...l.cards, card] } : l)),
+    lists: kanban.lists.map((l) => (l.id === targetListId ? { ...l, cards: [...l.cards, restoredCard] } : l)),
   };
 };
 
@@ -540,6 +723,32 @@ const commentDecoder: Decoder<Comment> = object({
   comment: string(),
 });
 
+const archivedFromListDecoder: Decoder<ArchivedFromList> = object({
+  id: string(),
+  title: string(),
+});
+
+const activityDetailDecoder: Decoder<CardActivityDetail> = object({
+  fromListTitle: optional(string()),
+  toListTitle: optional(string()),
+  fromListId: optional(string()),
+  toListId: optional(string()),
+  archivedFromListTitle: optional(string()),
+  description: optional(string()),
+});
+
+const activityDecoder: Decoder<CardActivity> = object({
+  id: string(),
+  type: union(
+    constant('created' as const),
+    constant('moved' as const),
+    constant('archived' as const),
+    constant('restored' as const),
+  ),
+  timestamp: string(),
+  detail: optional(activityDetailDecoder),
+});
+
 const cardDecoder: Decoder<Card> = object({
   id: string(),
   listId: string(),
@@ -549,6 +758,10 @@ const cardDecoder: Decoder<Card> = object({
   labels: array(labelDecoder),
   checkboxes: array(checkboxDecoder),
   comments: array(commentDecoder),
+  createdAt: optional(string()),
+  archivedAt: optional(string()),
+  archivedFromList: optional(archivedFromListDecoder),
+  activities: optional(array(activityDecoder)),
 });
 
 const listDecoder: Decoder<List> = object({

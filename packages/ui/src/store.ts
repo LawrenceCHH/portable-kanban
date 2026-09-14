@@ -11,6 +11,7 @@ import {
   addList,
   archiveAllCardInList,
   archiveCard,
+  archiveCards,
   archiveList,
   type Card,
   type CheckBox,
@@ -51,6 +52,7 @@ const filterAtom = atom<FilterState>({
 const showModalAtom = atom<boolean>(false);
 const menuAtom = atom<string | undefined>(undefined);
 const sortOrderAtom = atom<Record<string, 'none' | 'titleAsc' | 'titleDesc'>>({});
+const selectedCardIdsAtom = atom<string[]>([]);
 
 const lists = atom<List[]>([]);
 const archiveLists = atom<ArchiveList[]>([]);
@@ -162,6 +164,7 @@ type Selectors = {
   useCard: (listId: string, cardId: string) => Card | undefined;
   useMenu: () => string | undefined;
   useSortOrder: () => Record<string, 'none' | 'titleAsc' | 'titleDesc'>;
+  useSelectedCardIds: () => string[];
 };
 
 export const selectors: Selectors = {
@@ -178,6 +181,7 @@ export const selectors: Selectors = {
   useCard: (listId: string, cardId: string) => useAtomValue(cardSelector({ listId, cardId })),
   useMenu: () => useAtomValue(menuAtom),
   useSortOrder: () => useAtomValue(sortOrderAtom),
+  useSelectedCardIds: () => useAtomValue(selectedCardIdsAtom),
 };
 
 export const actions = {
@@ -227,6 +231,26 @@ export const actions = {
     const setState = useSetAtom(sortOrderAtom);
     return React.useCallback((listId: string, sortOrder: 'none' | 'titleAsc' | 'titleDesc') => {
       setState((current) => ({ ...current, [listId]: sortOrder }));
+    }, []);
+  },
+  useToggleSelectCard() {
+    const setState = useSetAtom(selectedCardIdsAtom);
+    return React.useCallback((cardId: string) => {
+      setState((prev) =>
+        prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId],
+      );
+    }, []);
+  },
+  useClearSelectedCards() {
+    const setState = useSetAtom(selectedCardIdsAtom);
+    return React.useCallback(() => {
+      setState([]);
+    }, []);
+  },
+  useSetSelectedCards() {
+    const setState = useSetAtom(selectedCardIdsAtom);
+    return React.useCallback((cardIds: string[]) => {
+      setState(cardIds);
     }, []);
   },
 };
@@ -365,6 +389,17 @@ export const kanbanActions = {
         setKanban(archiveCard(kanban, list, card));
       },
       [kanban, setKanban],
+    );
+  },
+  useArchiveCards() {
+    const [kanban, setKanban] = useAtom(kanbanAtom);
+    const setSelectedCards = useSetAtom(selectedCardIdsAtom);
+    return React.useCallback(
+      (cardIds: string[]) => {
+        setKanban(archiveCards(kanban, cardIds));
+        setSelectedCards([]);
+      },
+      [kanban, setKanban, setSelectedCards],
     );
   },
   useRestoreCard() {

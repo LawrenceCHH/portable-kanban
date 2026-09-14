@@ -8,24 +8,29 @@ import { Link, useLocation } from 'react-router-dom';
 import { styled } from 'styled-components';
 import { useAutoFocus } from '../hooks/useAutoFocus';
 import { type Card as CardModel } from 'portable-kanban-core';
-import { actions } from '../store';
+import { actions, selectors } from '../store';
 import { TextXs } from './shared/Text';
 
-const Container = styled.div`
+const Container = styled.div<{ $selected?: boolean }>`
   min-height: 20px;
   padding: 8px;
   margin-bottom: 8px;
   border-radius: var(--border-radius);
-  background-color: var(--secondary-background-color);
+  background-color: ${({ $selected }) =>
+    $selected ? 'var(--hover-color)' : 'var(--secondary-background-color)'};
   cursor: pointer;
   box-sizing: content-box;
-  box-shadow: var(--shadow-sm);
+  box-shadow: ${({ $selected }) =>
+    $selected ? '0 0 0 2px var(--primary-color), var(--shadow-sm)' : 'var(--shadow-sm)'};
   transition:
     box-shadow 0.15s ease,
     background-color 0.15s ease;
   &:hover {
     background-color: var(--hover-color);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    box-shadow: ${({ $selected }) =>
+      $selected
+        ? '0 0 0 2px var(--primary-color), 0 4px 10px rgba(0, 0, 0, 0.15)'
+        : '0 4px 10px rgba(0, 0, 0, 0.15)'};
   }
 `;
 
@@ -109,13 +114,28 @@ type Properties = {
   card: CardModel;
   isEdit?: boolean;
   editable?: boolean;
+  isSelected?: boolean;
+  onSelect?: (card: CardModel) => void;
+  onClick?: (card: CardModel) => void;
   onEnter?: (card: CardModel, keepOpen?: boolean) => void;
   onBlur?: (card: CardModel) => void;
 };
 
-export const Card = ({ card, onEnter, onBlur, editable = true, isEdit = false }: Properties) => {
+export const Card = ({
+  card,
+  onEnter,
+  onBlur,
+  editable = true,
+  isEdit = false,
+  isSelected,
+  onSelect,
+  onClick,
+}: Properties) => {
   const location = useLocation();
   const setAddCard = actions.useSetAddingCard();
+  const selectedCards = selectors.useSelectedCardIds();
+  const toggleSelectCard = actions.useToggleSelectCard();
+  const isCardSelected = isSelected ?? selectedCards.includes(card.id);
   const [isComposing, setIsComposing] = React.useState(false);
   const [state, setState] = React.useState<{
     card: CardModel;
@@ -198,10 +218,27 @@ export const Card = ({ card, onEnter, onBlur, editable = true, isEdit = false }:
 
   return (
     <Container
+      $selected={isCardSelected}
       onClick={(e: React.MouseEvent<HTMLDivElement>) => {
         // Prevent click from bubbling up when in edit mode
         if (state.isEdit) {
           e.stopPropagation();
+          return;
+        }
+        if (onClick) {
+          e.preventDefault();
+          e.stopPropagation();
+          onClick(state.card);
+          return;
+        }
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (onSelect) {
+            onSelect(state.card);
+          } else {
+            toggleSelectCard(state.card.id);
+          }
         }
       }}
     >
@@ -239,6 +276,17 @@ export const Card = ({ card, onEnter, onBlur, editable = true, isEdit = false }:
               pathname: `/list/${state.card.listId}/card/${state.card.id}`,
             }}
             state={{ backgroundLocation: location }}
+            onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+              if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onSelect) {
+                  onSelect(state.card);
+                } else {
+                  toggleSelectCard(state.card.id);
+                }
+              }
+            }}
           >
             {sortedLabels.length > 0 && (
               <Labels>

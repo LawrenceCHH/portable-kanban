@@ -48,6 +48,45 @@ const Contents = styled.div`
   align-content: flex-start;
 `;
 
+const BatchActionBar = styled.div`
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--primary-background-color);
+  color: var(--text-color);
+  padding: 10px 20px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 1000;
+  border: 1px solid var(--form-border-color);
+`;
+
+const BatchButton = styled.button<{ $variant?: 'primary' | 'secondary' }>`
+  background-color: ${({ $variant }) =>
+    $variant === 'secondary' ? 'transparent' : 'var(--primary-color)'};
+  color: ${({ $variant }) =>
+    $variant === 'secondary' ? 'var(--text-color)' : '#fff'};
+  border: ${({ $variant }) =>
+    $variant === 'secondary' ? '1px solid var(--form-border-color)' : 'none'};
+  border-radius: var(--border-radius);
+  padding: 6px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.85;
+  }
+`;
+
 type SortableListItemProps = {
   list: ListModel;
   kanban: KanbanModel;
@@ -83,6 +122,9 @@ const Board = () => {
   const addList = kanbanActions.useAddList();
   const setLists = kanbanActions.useSetLists();
   const menuClose = actions.useMenuClose();
+  const selectedCardIds = selectors.useSelectedCardIds();
+  const clearSelectedCards = actions.useClearSelectedCards();
+  const archiveCards = kanbanActions.useArchiveCards();
 
   const [showAddListInput, setShowAddListInput] = React.useState(false);
   const [activeDrag, setActiveDrag] = React.useState<ActiveDrag>(null);
@@ -95,6 +137,36 @@ const Board = () => {
   // rAF throttle refs for onDragOver
   const dragOverRafRef = React.useRef<number | null>(null);
   const pendingDragOverRef = React.useRef<DragOverEvent | null>(null);
+
+  // Global key listener for shortcuts: 'a' (batch archive), 'Escape' (clear selection)
+  React.useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isEditingText =
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          (activeEl as HTMLElement).isContentEditable);
+
+      if (isEditingText) return;
+
+      if (e.key === 'Escape') {
+        if (selectedCardIds.length > 0) {
+          clearSelectedCards();
+        }
+      } else if ((e.key === 'a' || e.key === 'A') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (selectedCardIds.length > 0) {
+          e.preventDefault();
+          archiveCards(selectedCardIds);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, [selectedCardIds, clearSelectedCards, archiveCards]);
 
   // During drag use local state for rendering; otherwise use store state
   const lists = localLists ?? storeLists;
@@ -244,6 +316,9 @@ const Board = () => {
   return kanban ? (
     <Container
       onClick={() => {
+        if (selectedCardIds.length > 0) {
+          clearSelectedCards();
+        }
         setAddCard(undefined);
         setShowAddListInput(false);
         menuClose();
@@ -253,6 +328,9 @@ const Board = () => {
       }}
       onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
         if (e.key === 'Escape') {
+          if (selectedCardIds.length > 0) {
+            clearSelectedCards();
+          }
           setAddCard(undefined);
           setShowAddListInput(false);
           menuClose();
@@ -311,6 +389,28 @@ const Board = () => {
           ) : null}
         </DragOverlay>
       </DndContext>
+      {selectedCardIds.length > 0 && (
+        <BatchActionBar onClick={(e) => e.stopPropagation()}>
+          <span>
+            Selected <strong>{selectedCardIds.length}</strong> card{selectedCardIds.length > 1 ? 's' : ''}
+          </span>
+          <BatchButton
+            onClick={() => {
+              archiveCards(selectedCardIds);
+            }}
+          >
+            Archive (a)
+          </BatchButton>
+          <BatchButton
+            $variant="secondary"
+            onClick={() => {
+              clearSelectedCards();
+            }}
+          >
+            Cancel (Esc)
+          </BatchButton>
+        </BatchActionBar>
+      )}
     </Container>
   ) : (
     <></>

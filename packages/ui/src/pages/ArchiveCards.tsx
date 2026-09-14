@@ -39,6 +39,8 @@ const MenuItem = styled.div`
   cursor: pointer;
 `;
 
+import { ArchivedCardModal } from '../components/ArchivedCardModal';
+
 type Properties = {
   cards: CardModel[];
 };
@@ -47,41 +49,87 @@ export const ArchiveCards = ({ cards }: Properties) => {
   const restoreCard = kanbanActions.useRestoreCard();
   const deleteCard = kanbanActions.useDeleteCard();
   const navigate = useNavigate();
+  const [selectedArchivedCard, setSelectedArchivedCard] = React.useState<CardModel | null>(null);
 
   return (
-    <Overlay
-      onClick={() => {
-        navigate('/');
-      }}
-    >
-      <ArchiveMenu>
-        <div style={{ width: '100%', padding: '8px', textAlign: 'center' }}>
-          <TextBaseBold>Archive Cards</TextBaseBold>
-        </div>
-        {cards.map((c) => (
-          <ArchiveCard>
-            <Card card={c} isEdit={false} editable={false} />
-            <Menus>
-              <MenuItem
-                onClick={(e: React.MouseEvent<HTMLDivElement>) => {
-                  e.stopPropagation();
-                  restoreCard(c);
-                }}
-              >
-                Restore
-              </MenuItem>
-              <MenuItem
-                onClick={(e: React.MouseEvent<HTMLDivElement>) => {
-                  e.stopPropagation();
-                  deleteCard(c);
-                }}
-              >
-                Delete
-              </MenuItem>
-            </Menus>
-          </ArchiveCard>
-        ))}
-      </ArchiveMenu>
-    </Overlay>
+    <>
+      <Overlay
+        onClick={() => {
+          navigate('/');
+        }}
+      >
+        <ArchiveMenu onClick={(e) => e.stopPropagation()}>
+          <div style={{ width: '100%', padding: '8px', textAlign: 'center' }}>
+            <TextBaseBold>Archive Cards</TextBaseBold>
+          </div>
+          {cards.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px 8px', color: 'var(--dark-text-color)', fontSize: '0.875rem' }}>
+              No archived cards
+            </div>
+          ) : (
+            cards.map((c) => (
+              <ArchiveCard key={c.id}>
+                <Card
+                  card={c}
+                  isEdit={false}
+                  editable={false}
+                  onClick={() => {
+                    setSelectedArchivedCard(c);
+                  }}
+                />
+                {c.archivedFromList?.title && (
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--dark-text-color)',
+                      marginTop: '-4px',
+                      marginBottom: '6px',
+                      paddingLeft: '4px',
+                    }}
+                  >
+                    Block: {c.archivedFromList.title}
+                  </div>
+                )}
+                <Menus>
+                  <MenuItem
+                    onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                      e.stopPropagation();
+                      restoreCard(c);
+                    }}
+                  >
+                    Restore
+                  </MenuItem>
+                  <MenuItem
+                    onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                      e.stopPropagation();
+                      if (window.confirm(`Are you sure you want to permanently delete "${c.title}"?`)) {
+                        deleteCard(c);
+                      }
+                    }}
+                  >
+                    Delete
+                  </MenuItem>
+                </Menus>
+              </ArchiveCard>
+            ))
+          )}
+        </ArchiveMenu>
+      </Overlay>
+
+      {selectedArchivedCard && (
+        <ArchivedCardModal
+          card={selectedArchivedCard}
+          onClose={() => setSelectedArchivedCard(null)}
+          onRestore={(c) => {
+            restoreCard(c);
+            setSelectedArchivedCard(null);
+          }}
+          onDelete={(c) => {
+            deleteCard(c);
+            setSelectedArchivedCard(null);
+          }}
+        />
+      )}
+    </>
   );
 };
