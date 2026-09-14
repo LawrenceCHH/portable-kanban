@@ -99,6 +99,15 @@
 
 ## 3. 版本歷史更新紀錄 (Release History / Changelog)
 
+### v0.2.9 (2026-09-15)
+- **重大修復：封存卡片 hover + `d` 鍵會跳出兩個互不相干的刪除確認視窗**
+  - **根本原因**：`App.tsx` 為了讓 Board 在開啟 Archive Cards / EditCard / Filters 等覆蓋層路由時仍維持「背景可見」，會把 `<Board />` 包在 `<Routes location={backgroundLocation ?? location}>` 裡渲染。React Router 的這個機制會讓該子樹內所有的 `useLocation()` 呼叫，看到的都是被覆寫過的背景路徑（永遠是 `/`），而不是瀏覽器實際的當前網址。
+  - 因此 `Board.tsx` 原本用來判斷「目前是否真的在看板首頁、該不該回應全域快捷鍵」的檢查 `if (location.pathname !== '/') return;` **從未真正生效過**——不管實際上是否有覆蓋層開著，Board 的全域鍵盤監聽永遠被判定為「在首頁」。
+  - 具體症狀：在 Archive Cards 面板 hover 一張封存卡片、按下 `d`，會同時觸發**兩個獨立、互不知情**的元件：`ArchiveCards.tsx` 自己的「Delete Archived Card」確認框（正確），以及 Board.tsx 仍在背景監聽而誤觸發的「Delete Card」確認框（針對同一張卡片，因為 `hoveredCardInfo` 是全域共用的 Jotai atom）。使用者會看到兩個長得很像但標題不同的警告視窗疊在一起，在其中一個按 Cancel，另一個仍獨立存在、可能被誤按確認。
+  - **修復方式**：`App.tsx` 改為在未被覆寫的最外層 `location` 判斷是否有 `backgroundLocation`，並以明確的 `isBackground` prop 傳給 `<Board />`；`Board.tsx` 的全域快捷鍵判斷改用這個 prop，不再依賴會被覆寫的 `useLocation()`。
+  - 新增以真實 `App.tsx` 路由結構（而非手動拼裝元件）驗證的回歸測試，證實修復前會重現此 bug、修復後不會。
+- **除錯過程紀錄**：此問題一開始被誤判為「VS Code webview 快取沒重新整理」，浪費了不少來回；關鍵突破點是使用者提供了截圖中的完整快捷鍵操作步驟（純 hover + 按一次 `d`，無其他互動）以及當下 `.kanban` 檔案的原始內容，才排除環境快取問題、鎖定到 React Router 巢狀 `location` 覆寫的機制性問題。日後若再懷疑「webview 沒更新」，應先請使用者提供**最小重現步驟**與**當下檔案內容**，而不是預設是快取問題。
+
 ### v0.2.8 (2026-09-14)
 - **UI 精簡：封存卡片不再顯示 UID**
   - 移除封存卡片列表 (`ArchiveCards.tsx`) 中每張卡片旁的 `#uid` 標籤顯示，以及 `ArchivedCardModal.tsx` 封存快照橫幅中的「UID: ...」列。
@@ -264,4 +273,4 @@ pnpm lint
 
 ---
 
-*文檔版本：v0.2.8 ｜ 最後更新時間：2026-09-14*
+*文檔版本：v0.2.9 ｜ 最後更新時間：2026-09-15*
