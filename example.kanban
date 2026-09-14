@@ -1,0 +1,244 @@
+{
+  "lists": [
+    {
+      "id": "list-backlog",
+      "title": "Backlog",
+      "cards": [
+        {
+          "id": "card-1",
+          "listId": "list-backlog",
+          "title": "目標: 閱讀方法革新研究；19:00 正念10分鐘 -> 研究/閱讀",
+          "description": "每日固定時間進行深度閱讀與研究紀錄",
+          "dueDate": "2026-09-30T00:00:00.000Z",
+          "labels": [
+            {
+              "id": "label-1",
+              "title": "研究",
+              "color": "#0079bf"
+            }
+          ],
+          "checkboxes": [
+            {
+              "id": "check-1",
+              "title": "19:00 正念 10 分鐘",
+              "checked": true
+            },
+            {
+              "id": "check-2",
+              "title": "閱讀論文 45 分鐘",
+              "checked": false
+            }
+          ],
+          "comments": [],
+          "createdAt": "2026-09-10T08:00:00.000Z",
+          "activities": [
+            {
+              "id": "act-1",
+              "type": "created",
+              "timestamp": "2026-09-10T08:00:00.000Z",
+              "detail": {
+                "toListId": "list-backlog",
+                "toListTitle": "Backlog"
+              }
+            }
+          ]
+        },
+        {
+          "id": "card-2",
+          "listId": "list-backlog",
+          "title": "著作權研究與探討",
+          "description": "整理現行數位內容著作權相關規範",
+          "labels": [],
+          "checkboxes": [],
+          "comments": [],
+          "createdAt": "2026-09-11T09:30:00.000Z",
+          "activities": [
+            {
+              "id": "act-2",
+              "type": "created",
+              "timestamp": "2026-09-11T09:30:00.000Z",
+              "detail": {
+                "toListId": "list-backlog",
+                "toListTitle": "Backlog"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "list-todo",
+      "title": "To Do",
+      "cards": [
+        {
+          "id": "card-3",
+          "listId": "list-todo",
+          "title": "嘗試現有的商業 RAG 平台測試",
+          "description": "比較各平台索引速度與檢索精確度",
+          "labels": [
+            {
+              "id": "label-2",
+              "title": "AI",
+              "color": "#61bd4f"
+            }
+          ],
+          "checkboxes": [
+            {
+              "id": "check-3",
+              "title": "建立 10 組基準測試題目",
+              "checked": true
+            },
+            {
+              "id": "check-4",
+              "title": "比較輸出準確度",
+              "checked": false
+            }
+          ],
+          "comments": [
+            {
+              "id": "comm-1",
+              "comment": "已完成初始題目設計"
+            }
+          ],
+          "createdAt": "2026-09-12T10:00:00.000Z",
+          "activities": [
+            {
+              "id": "act-3",
+              "type": "created",
+              "timestamp": "2026-09-12T10:00:00.000Z",
+              "detail": {
+                "toListId": "list-backlog",
+                "toListTitle": "Backlog"
+              }
+            },
+            {
+              "id": "act-4",
+              "type": "moved",
+              "timestamp": "2026-09-13T14:20:00.000Z",
+              "detail": {
+                "fromListId": "list-backlog",
+                "fromListTitle": "Backlog",
+                "toListId": "list-todo",
+                "toListTitle": "To Do"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "list-doing",
+      "title": "Doing",
+      "cards": []
+    },
+    {
+      "id": "list-done",
+      "title": "Done 2026-09-28",
+      "cards": []
+    }
+  ],
+  "archive": {
+    "lists": [
+      {
+        "id": "archived-list-1",
+        "title": "裁判觀點檢索系統重整"
+      }
+    ],
+    "cards": [
+      {
+        "id": "card-archived-1",
+        "listId": "list-done",
+        "title": "了解 agile 開發；scrum 三角色定位",
+        "description": "敏捷開發概念與 Scrum 角色梳理",
+        "labels": [
+          {
+            "id": "label-3",
+            "title": "敏捷",
+            "color": "#eb5a46"
+          }
+        ],
+        "checkboxes": [
+          {
+            "id": "check-5",
+            "title": "閱讀 Scrum Guide",
+            "checked": true
+          },
+          {
+            "id": "check-6",
+            "title": "釐清 PO、Scrum Master、Dev 職責",
+            "checked": true
+          }
+        ],
+        "comments": [],
+        "createdAt": "2026-09-01T09:00:00.000Z",
+        "archivedAt": "2026-09-14T14:30:00.000Z",
+        "archivedFromList": {
+          "id": "list-done",
+          "title": "Done 2026-09-28"
+        },
+        "activities": [
+          {
+            "id": "act-5",
+            "type": "created",
+            "timestamp": "2026-09-01T09:00:00.000Z",
+            "detail": {
+              "toListId": "list-backlog",
+              "toListTitle": "Backlog"
+            }
+          },
+          {
+            "id": "act-6",
+            "type": "moved",
+            "timestamp": "2026-09-05T11:00:00.000Z",
+            "detail": {
+              "fromListId": "list-backlog",
+              "fromListTitle": "Backlog",
+              "toListId": "list-doing",
+              "toListTitle": "Doing"
+            }
+          },
+          {
+            "id": "act-7",
+            "type": "moved",
+            "timestamp": "2026-09-10T16:00:00.000Z",
+            "detail": {
+              "fromListId": "list-doing",
+              "fromListTitle": "Doing",
+              "toListId": "list-done",
+              "toListTitle": "Done 2026-09-28"
+            }
+          },
+          {
+            "id": "act-8",
+            "type": "archived",
+            "timestamp": "2026-09-14T14:30:00.000Z",
+            "detail": {
+              "archivedFromListTitle": "Done 2026-09-28",
+              "fromListId": "list-done",
+              "fromListTitle": "Done 2026-09-28"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "settings": {
+    "labels": [
+      {
+        "id": "label-1",
+        "title": "研究",
+        "color": "#0079bf"
+      },
+      {
+        "id": "label-2",
+        "title": "AI",
+        "color": "#61bd4f"
+      },
+      {
+        "id": "label-3",
+        "title": "敏捷",
+        "color": "#eb5a46"
+      }
+    ]
+  }
+}

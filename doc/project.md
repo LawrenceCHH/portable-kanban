@@ -1,54 +1,171 @@
 # Portable Kanban 專案開發與維護手冊
 
-> 本文檔用於記錄 Portable Kanban 專案架構、開發環境要求、維護規範與常用工作流程。
+> 本文檔記錄 Portable Kanban 專案的功能現狀、架構設計、開發環境要求、版本歷史更新紀錄與維護指引。後續所有功能擴充與變更均於此文檔持續維護。
+
+---
+
+## 目錄
+
+1. [專案概覽 (Overview)](#1-專案概覽-overview)
+2. [目前功能總覽（現在專案能幹嘛）](#2-目前功能總覽現在專案能幹嘛)
+3. [版本歷史更新紀錄 (Release History / Changelog)](#3-版本歷史更新紀錄-release-history--changelog)
+4. [測試範本指引 (Sample Kanban Template)](#4-測試範本指引-sample-kanban-template)
+5. [Monorepo 架構 (Architecture)](#5-monorepo-架構-architecture)
+6. [開發環境需求與設置 (Environment Setup)](#6-開發環境需求與設置-environment-setup)
+7. [常用開發指令 (Development Commands)](#7-常用開發指令-development-commands)
+8. [VS Code Extension 除錯指南 (Debugging in VS Code)](#8-vs-code-extension-除錯指南-debugging-in-vs-code)
+9. [維護與變更指引 (Maintenance Guide)](#9-維護與變更指引-maintenance-guide)
 
 ---
 
 ## 1. 專案概覽 (Overview)
 
-**Portable Kanban** 是一個輕量級、跨平台的看板管理工具。它的核心理念是以純文字的 `.kanban`（JSON 格式）作為統一的儲存格式，使看板資料可在不同介面間直接無縫共用。
+**Portable Kanban** 是一個以純文字檔案 `.kanban`（標準 JSON 格式）為儲存核心的輕量級看板工具。
 
-目前支援的客戶端介面包括：
-- **VS Code Extension**：嵌入式 Custom Editor，提供視覺化拖曳編輯體驗。
-- **Web App**：瀏覽器獨立執行的 Web 看板。
-- **TUI CLI (`pkb`)**：基於 Ink 的終端機鍵盤驅動介面。
-- **MCP Server**：符合 Model Context Protocol 規範的服務，供 AI 助手（Claude Desktop、Copilot 等）讀取與編輯看板。
+核心設計哲學：
+- **檔案即看板**：所有資料完整收錄在單一 `.kanban` 檔案內，便於 Git 版本控制、備份與跨裝置攜帶。
+- **跨平台共用**：無論是在 VS Code 編輯器、瀏覽器網頁、終端機命令列，或是 AI 助手，皆操作同一份檔案。
 
 ---
 
-## 2. Monorepo 架構 (Architecture)
+## 2. 目前功能總覽（現在專案能幹嘛）
 
-專案採用 **pnpm workspace** 進行 Monorepo 管理，分為共用套件 (`packages/`) 與獨立應用 (`apps/`)：
+### 2.1 支援的客戶端介面
+
+| 客戶端 | 執行環境 | 主要特點 |
+|---|---|---|
+| **VS Code Extension** | VS Code 編輯器內部 | 透過 Custom Editor 註冊，雙擊 `.kanban` 檔案即開即用，支援視覺化拖曳與 Webview 互動。 |
+| **Web App** | 瀏覽器（Chrome, Firefox, Safari, Edge） | 獨立 Web 應用，支援本地檔案讀取與編輯。 |
+| **TUI CLI (`pkb`)** | 終端機 (Terminal) | 基於 Ink 的鍵盤快捷操作介面，無 GUI 環境下仍可高效管理看板。 |
+| **MCP Server** | Model Context Protocol | 供 Claude Desktop、GitHub Copilot 等 AI Agent 直接讀取與修改看板卡片。 |
+
+### 2.2 看板核心功能
+
+- **清單與卡片管理**：可自由新增、編輯、拖曳排序、封存、刪除 List 與 Card。
+- **卡片細節支援**：
+  - 多行描述（支援 Markdown 格式）。
+  - 彩色標籤分類（支援自訂標籤名稱與色彩）。
+  - 到期日管理（過期與即將到期之色標提醒）。
+  - 任務檢查清單（Checkboxes，卡片外層即時顯示完成進度條）。
+  - 留言紀錄（Comments）。
+- **搜尋與篩選**：支援以文字模糊搜尋（Fuse.js）及多標籤組合過濾卡片。
+- **外觀主題**：支援深色 (Dark)、淺色 (Light) 及隨系統切換 (System) 三種主題。
+
+### 2.3 多選與快捷鍵操作 (Multi-Select & Shortcuts)
+
+- **Ctrl / Cmd 多選卡片**：
+  - 按住 `Ctrl`（Windows / Linux）或 `Cmd`（macOS）並點擊卡片，可任意複選或取消複選多張卡片。
+  - 選取的卡片會呈現主題色外框光暈高亮。
+- **快捷鍵 `a` 批次封存 (Batch Archive)**：
+  - 選取一或多張卡片後，按下鍵盤 `a` 鍵即可一次性將選取的卡片全數封存。
+  - 焦點位於輸入框（`input` / `textarea`）時會自動忽略，避免打字衝突。
+- **快捷鍵 `Esc` 與背景點擊**：按下 `Esc` 或點擊看板空白處即可瞬間清除所有選取狀態。
+- **批次操作浮動工具列**：選取卡片時，畫面底部中央浮現提示列，顯示「已選取 X 張卡片」，並提供「封存 (a)」與「取消 (Esc)」快捷操作按鈕。
+
+### 2.4 不可變 Block 快照機制 (Immutable Block Snapshot)
+
+- **問題背景**：看板上的清單 (Block) 經常會隨時間改名（例如 `Done 2026-09-28`）或被刪除。若封存卡片僅依賴 `listId` 動態查找清單標題，改名或刪除後歷史歸屬會失真。
+- **快照機制**：卡片在封存當下，會將所屬清單的標題快照與封存時間戳永久寫入卡片本體：
+  ```json
+  "archivedAt": "2026-09-14T14:30:00.000Z",
+  "archivedFromList": {
+    "id": "list-done",
+    "title": "Done 2026-09-28"
+  }
+  ```
+  即使日後看板上的清單改名為 `Done 2026-10-05`，封存卡片始終保留封存當下的精確 Block 資訊。
+
+### 2.5 簡易生命週期審計日誌 (Activity Audit Log)
+
+卡片內建輕量級活動軌跡陣列 `activities`，記錄卡片的完整生命週期：
+- 🌟 **建立 (`created`)**：記錄卡片建立的時間與初始清單名稱。
+- ➡️ **跨 Block 移動 (`moved`)**：記錄移動發生的時間、來源清單名稱快照與目的清單名稱快照。
+- 📦 **封存 (`archived`)**：記錄封存時間與封存時所在的清單名稱快照。
+- 🔄 **還原 (`restored`)**：記錄從封存區還原回看板的時間與目標清單。
+
+### 2.6 封存卡片彈跳視窗 (Archived Card Modal)
+
+在封存區點擊任何封存卡片，會彈出專屬檢視視窗：
+- **頂部封存快照橫幅**：明確標示「封存自哪個 Block」及「精確封存時間」。
+- **卡片完整內容**：標題、標籤、到期日、描述內容、任務清單勾選狀態（含劃線標記）、留言紀錄。
+- **活動歷程時間軸 (Activity Timeline)**：以視覺化時間軸依序列出卡片自建立以來的移動與封存歷程。
+- **管理動作**：提供「還原至看板 (Restore)」與「永久刪除 (Delete)」按鈕。
+
+---
+
+## 3. 版本歷史更新紀錄 (Release History / Changelog)
+
+### v0.2.7 (2026-09-14)
+- **新功能：多選卡片與快捷鍵批次封存**
+  - 支援 `Ctrl+Click`（macOS 為 `Cmd+Click`）多選看板卡片。
+  - 新增全域快捷鍵 `a`：有卡片選取時立即批次封存。
+  - 新增全域快捷鍵 `Esc`：快速清除選取卡片。
+  - 增加底部批次操作浮動工具列（顯示選取計數、封存按鈕、取消按鈕）。
+- **新功能：不可變 Block 封存快照**
+  - 卡片封存時寫入 `archivedFromList: { id, title }` 快照與 `archivedAt` 時間戳，徹底解決看板清單改名導致封存歷史混淆的問題。
+- **新功能：簡易生命週期活動審計日誌 (CardActivity)**
+  - 卡片資料模型擴充 `activities?: CardActivity[]`，自動追蹤紀錄 `created`、`moved`、`archived`、`restored` 四大事件的時間與來源/目的 Block 快照。
+  - 維持完全向後相容性，舊有 `.kanban` 檔案可無縫載入。
+- **修復與體驗改進：封存卡片彈跳視窗**
+  - 修復了過去點擊封存卡片毫無反應的問題。
+  - 建立專用 `ArchivedCardModal`，支援展示封存 Block 快照橫幅、完整卡片資訊、活動歷程時間軸、還原與刪除操作。
+- **開發環境與架構優化**
+  - 升級並對齊 React 與 React-DOM 至 `^19.3.0`，修正 React 19 核心相容性錯誤。
+  - 修正 `apps/mcp` TypeScript Node.js 型別宣告支援。
+  - 建立完整的 VS Code 除錯設定 (`launch.json` 與 `tasks.json`)。
+
+### v0.2.6 (早期版本)
+- 完成 Monorepo 架構遷移，拆分為 `packages/core`、`packages/ui`、`apps/vscode`、`apps/web`、`apps/tui`、`apps/mcp`。
+- 引入 Vite、Vitest 與 Oxlint 現代化前端建置工具鏈。
+
+---
+
+## 4. 測試範本指引 (Sample Kanban Template)
+
+專案根目錄提供了一份標準範本檔 [example.kanban](file:///home/lawrencehuang/projects/portable-kanban/example.kanban)（參考使用者的典型筆記格式如 `/home/lawrencehuang/note/r.kanban` 建立）。
+
+該範本包含：
+1. **活躍清單**：`Backlog`、`To Do`、`Doing`、`Done 2026-09-28`。
+2. **多種類型卡片**：包含含標籤、任務檢查表（Checkboxes）、到期日、留言的完整範例。
+3. **活動日誌範例**：示範了包含 `created` 與 `moved` 軌跡的卡片。
+4. **已封存卡片範例**：展示了包含 `archivedFromList`（指向 `Done 2026-09-28`）及完整生命週期時間軸的封存卡片。
+
+### 測試方式
+
+1. 在 VS Code 中按下 `F5` 啟動 Extension Development Host。
+2. 在新視窗中開啟 [example.kanban](file:///home/lawrencehuang/projects/portable-kanban/example.kanban)。
+3. **驗證快捷鍵與多選**：
+   - 按住 `Ctrl` 點擊卡片進行多選，確認高亮外框與底部工具列。
+   - 按下 `a` 執行批次封存，確認卡片移至封存區。
+4. **驗證封存彈窗與歷史**：
+   - 點擊右上角選單進入 `Archive Cards`。
+   - 點擊任一封存卡片，確認彈出 `ArchivedCardModal`，並檢查 Block 快照名稱與活動時間軸是否正確呈現。
+
+---
+
+## 5. Monorepo 架構 (Architecture)
 
 ```text
 portable-kanban/
 ├── packages/
-│   ├── core/         # 核心資料模型、驗證器 (runtypes/decoder)、JSON 解析與序列化
-│   └── ui/           # 共用 React 看板 UI 組件、頁面、Jotai 狀態管理、拖曳邏輯 (@dnd-kit)
+│   ├── core/         # 核心資料模型、驗證器 (Decoder)、JSON 解析與序列化
+│   └── ui/           # 共用 React 看板組件、頁面、Jotai 狀態管理、@dnd-kit 拖曳
 ├── apps/
-│   ├── vscode/       # VS Code 擴充套件（主進程擴充端 + Webview 前端打包）
+│   ├── vscode/       # VS Code 擴充套件（主進程 esbuild + Webview vite）
 │   ├── web/          # 獨立 Web 應用程式 (Vite + React)
 │   ├── tui/          # 終端機 TUI 應用程式 (Ink + React 18)
-│   └── mcp/          # Model Context Protocol 伺服器 (Node.js TypeScript)
+│   └── mcp/          # Model Context Protocol 伺服器
 ├── doc/
 │   └── project.md    # 專案維護手冊（本文檔）
-├── .tool-versions    # 工具版本定義 (Node.js)
+├── example.kanban    # 功能測試與範本檔案
+├── .tool-versions    # 工具版本定義 (Node.js 24.16.0)
 ├── pnpm-workspace.yaml
 └── package.json
 ```
 
-### 模組依賴關係
-
-- `packages/core` 為底層，無相依其他內部模組。
-- `packages/ui` 依賴 `packages/core`。
-- `apps/vscode` 與 `apps/web` 同時依賴 `packages/core` 與 `packages/ui`。
-- `apps/mcp` 與 `apps/tui` 依賴 `packages/core`。
-
 ---
 
-## 3. 開發環境需求與設置 (Environment Setup)
-
-### 依賴要求
+## 6. 開發環境需求與設置 (Environment Setup)
 
 | 工具 | 建議版本 | 備註 |
 |---|---|---|
@@ -56,49 +173,22 @@ portable-kanban/
 | **pnpm** | `9.15.x` 或以上 | Monorepo 套件管理與鎖定檔 |
 | **mise** | 最新版 | 建議的版本管理器（相容 `.tool-versions`） |
 
-### 快速初始化環境
+### 快速初始化指令
 
-1. **安裝 mise 並設定 Node.js**：
-   ```bash
-   # 安裝專案指定 Node 版本
-   mise install
+```bash
+# 安裝指定 Node 版本與 pnpm
+mise install
+mise use -g pnpm@9.15.9
 
-   # 安裝 pnpm
-   mise use -g pnpm@9.15.9
-   ```
-
-2. **確認環境變數與 PATH**：
-   確保 `~/.local/share/mise/shims` 與 `~/.local/bin` 已包含在 `PATH` 中。
-
-3. **安裝依賴**：
-   ```bash
-   pnpm install
-   ```
+# 安裝所有相依套件
+pnpm install
+```
 
 ---
 
-## 4. 關鍵環境與依賴相容注意事項 (Known Gotchas)
+## 7. 常用開發指令 (Development Commands)
 
-維護本專案或升級套件時需特別注意以下要點：
-
-1. **React 19 版本必須完全一致**：
-   - React 19 在載入時會嚴格校驗 `react` 與 `react-dom` 的版本號，若不完全匹配會拋出致命錯誤 `Incompatible React versions`。
-   - `packages/ui`、`apps/vscode` 與 `apps/web` 的 `react` 與 `react-dom` 版本必須保持相同（目前使用 `^19.3.0`）。
-   - **例外**：`apps/tui` 因 Ink 依賴限制，維持使用 React 18，不可強制覆寫全域 React 版本。
-
-2. **TypeScript 與 Node 內建模組型別**：
-   - 包含 Node.js 內建模組（如 `node:fs`、`node:path`、`process`）的專案（如 `apps/mcp`），其 `tsconfig.json` 的 `compilerOptions` 需明確加入 `"types": ["node"]`，避免型別推斷失敗。
-
-3. **雙建置目標 (Dual-bundle) 架構**：
-   - `apps/vscode` 包含兩套不同目標的建置：
-     - **Extension 主進程**：使用 `esbuild` 編譯為 Node.js CommonJS (`dist/extension.js`)。
-     - **Webview UI**：使用 `vite build` 編譯為瀏覽器端程式 (`dist/kanban.js`)。
-
----
-
-## 5. 常用開發指令 (Development Commands)
-
-### 擴充套件專用開發指令
+### 擴充套件專用指令
 
 ```bash
 # 編譯 VS Code 擴充套件（產出 dist/extension.js 與 dist/kanban.js）
@@ -124,76 +214,28 @@ pnpm test
 pnpm lint
 ```
 
-### 其他子應用指令
+---
 
-```bash
-# Web 應用開發伺服器
-pnpm dev:web
+## 8. VS Code Extension 除錯指南 (Debugging in VS Code)
 
-# TUI 開發
-pnpm dev:tui
-
-# MCP 伺服器開發
-pnpm dev:mcp
-```
+專案已在 `.vscode/` 設定除錯環境：
+1. **啟動除錯 (F5)**：選擇 **Launch Extension**，系統會先執行 `build:vscode`，隨後啟動獨立的 Extension Development Host。
+2. **隨改隨編除錯**：選擇 **Watch & Launch Extension**，即可以即時監聽模式進行開發與測試。
+3. **手動測試新看板**：在除錯視窗按 `Ctrl+Shift+P` 執行 `Portable Kanban: Create new Kanban`，或直接開啟現有的 `.kanban` 檔案。
 
 ---
 
-## 6. VS Code Extension 除錯指南 (Debugging in VS Code)
+## 9. 維護與變更指引 (Maintenance Guide)
 
-專案已配置根目錄下的 `.vscode/launch.json` 與 `.vscode/tasks.json`：
+### 新增或修改資料結構流程
 
-1. **啟動除錯 (F5)**：
-   - 在 VS Code 中按下 `F5` 或至「執行與偵錯」分頁選擇 **Launch Extension**。
-   - 系統會自動先執行 `build:vscode` 建置，隨後開啟 Extension Development Host 獨立視窗。
-2. **即時監聽除錯**：
-   - 選擇 **Watch & Launch Extension**，會在背景執行 `pnpm dev:vscode` 隨改隨編。
-3. **功能驗證步驟**：
-   - 在新開啟的 Extension Development Host 視窗中，按下 `Ctrl+Shift+P`（或 `Cmd+Shift+P`）。
-   - 執行命令：`Portable Kanban: Create new Kanban`。
-   - 即可測試看板的新增、拖曳卡片、編輯文字、標籤等全部互動功能。
+若需擴充卡片欄位或看板結構，請依循以下標準步驟：
+1. **更新核心模型與 Decoder**：編輯 `packages/core/src/kanban.ts`，新增型別並在 `cardDecoder` 中將新欄位設為 `optional`，以確保向後相容。
+2. **更新核心操作函式**：更新 `packages/core/src/kanban.ts` 中的對應操作（例如 `archiveCard`、`moveCard` 等）。
+3. **更新單元測試**：在 `packages/core/src/tests/kanban.test.ts` 中撰寫新功能之測試案例，並執行 `pnpm test`。
+4. **更新共用狀態與 UI**：在 `packages/ui/src/store.ts` 中新增或擴充 Jotai Atom / Action，並更新對應 UI 組件。
+5. **更新本文檔 (project.md)**：將新功能詳細記錄於「目前功能總覽」與「版本歷史更新紀錄」中。
 
 ---
 
----
-
-## 7. 看板操作與卡片生命週期功能 (Card Features & Lifecycle)
-
-### 快捷鍵與多選卡片 (Multi-Select & Shortcuts)
-- **多選卡片**：按住 `Ctrl`（Windows / Linux）或 `Cmd`（macOS）並點擊卡片，可切換該卡片的選取狀態。選取之卡片會呈現醒目高亮外框。
-- **批次封存 (`a` / `A`)**：選取一或多張卡片後，直接按下 `a` 鍵即可執行**批次封存**。
-- **取消選取 (`Esc`)**：按下 `Esc` 鍵或點擊看板空白處即可取消所有卡片選取。
-- **批次操作浮動工具列**：一旦有卡片被選取，畫面底部會浮現操作列，顯示已選取數量並提供「封存 (a)」與「取消 (Esc)」按鈕。
-
-### 卡片封存快照與活動日誌 (Archive Snapshot & Lifecycle Audit Log)
-- **不可變 Block 快照**：卡片封存時，會在卡片資料內永久寫入當下的封存時間 `archivedAt` 與所屬清單快照 `archivedFromList: { id, title }`。即使看板上的清單事後被改名（例如 `Done 2026-09-28` 改為 `Done 2026-10-05`）或被刪除，已封存卡片始終保留當時封存所屬的 Block 名稱。
-- **生命週期軌跡 (Audit Log)**：卡片支援 `activities?: CardActivity[]`，自動追蹤關鍵生命週期事件：
-  - `created`：卡片建立時間與初始清單。
-  - `moved`：跨清單移動之來源清單與目的清單快照名稱及時間。
-  - `archived`：封存時間與當時清單快照名稱。
-  - `restored`：還原時間與目的清單名稱。
-- **向後相容**：所有新增欄位均為可選（`optional`），舊版 `.kanban` 檔案可正常載入與解析。
-
-### 封存卡片彈跳視窗 (Archived Card Modal)
-- 在封存側邊欄點擊卡片時，會開啟詳細檢視 Modal：
-  - 頂部醒目橫幅顯示**封存時間**與**封存當下的 Block 快照名稱**。
-  - 完整展示卡片標題、標籤、到期日、描述、任務檢查清單（含勾選狀態）、留言紀錄。
-  - **活動歷程時間軸 (Activity Timeline)**：視覺化展示該卡片自建立、移動、封存到還原的所有生命週期軌跡。
-  - 提供「還原 (Restore)」、「永久刪除 (Delete)」與「關閉 (Close)」操作按鈕。
-
----
-
-## 8. 維護與變更指引 (Maintenance Guide)
-
-### 修改資料結構流程
-
-若需擴充卡片欄位或看板資料結構：
-1. **修改核心模型**：編輯 `packages/core/src/kanban.ts`，新增型別與欄位定義。
-2. **更新序列化與解碼器**：更新 `packages/core/src/kanban.ts` 內的解碼器，以確保能向後相容舊有 `.kanban` 檔案。
-3. **更新共用狀態與 UI**：在 `packages/ui/src/` 中更新 Jotai Atom (`store.ts`) 及對應元件。
-4. **執行測試**：執行 `pnpm test` 確保既有解析與操作邏輯不被破壞。
-
----
-
-*最後更新時間：2026-09-14*
-
+*文檔版本：v0.2.7 ｜ 最後更新時間：2026-09-14*
