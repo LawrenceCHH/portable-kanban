@@ -15,7 +15,7 @@ import { CSS } from '@dnd-kit/utilities';
 import * as React from 'react';
 import { ScrollContainer } from 'react-indiana-drag-scroll';
 import { styled } from 'styled-components';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Header } from '../components/Header';
 import { List } from '../components/List';
@@ -122,7 +122,15 @@ const SortableListItem = ({ list, kanban }: SortableListItemProps) => {
 
 type ActiveDrag = { type: 'card'; cardId: string } | { type: 'list'; listId: string } | null;
 
-const Board = () => {
+type Properties = {
+  // True when Board is being rendered as the backgrounded element behind an
+  // overlay route (Archive Cards, Archive Lists, Filters, EditCard). In that
+  // case `useLocation()` below is scoped to the background <Routes location=...>
+  // override and always reports '/', so it can't be used to detect this.
+  isBackground?: boolean;
+};
+
+const Board = ({ isBackground = false }: Properties) => {
   const kanban = selectors.useKanban();
   const storeLists = selectors.useLists();
   const title = selectors.useTitle();
@@ -135,7 +143,6 @@ const Board = () => {
   const archiveCards = kanbanActions.useArchiveCards();
 
   const navigate = useNavigate();
-  const location = useLocation();
   const hoveredCardInfo = selectors.useHoveredCard();
   const deleteActiveCard = kanbanActions.useDeleteActiveCard();
   const deleteActiveCards = kanbanActions.useDeleteActiveCards();
@@ -172,8 +179,9 @@ const Board = () => {
   // - Escape: clear selection
   React.useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Only handle board shortcuts when directly on board view
-      if (location.pathname !== '/') return;
+      // Only handle board shortcuts when directly on board view (not backgrounded
+      // behind an overlay route like Archive Cards or EditCard)
+      if (isBackground) return;
 
       // If a confirmation dialog is active, let it handle its own keys
       if (deleteConfirmation) return;
@@ -287,7 +295,7 @@ const Board = () => {
     copyCard,
     toggleSelectCard,
     navigate,
-    location.pathname,
+    isBackground,
   ]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));

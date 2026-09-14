@@ -44,7 +44,7 @@ const App = () => {
   return (
     <>
       <Routes location={state?.backgroundLocation ?? location}>
-        <Route path="/" element={<Board />} />
+        <Route path="/" element={<Board isBackground={!!state?.backgroundLocation} />} />
       </Routes>
       {(state?.backgroundLocation ?? location.pathname.startsWith('/list')) && (
         <Routes>
