@@ -15,7 +15,6 @@ import {
 } from 'react-icons/md';
 import { useNavigate, useParams } from 'react-router-dom';
 import { styled } from 'styled-components';
-import { getBackend } from '../backend';
 import { Comment } from '../components/Comment';
 import { LabelList } from '../components/Label/List';
 import { AddComment } from '../components/shared/AddComment';
@@ -330,11 +329,9 @@ const EditCard = () => {
     if (card) {
       deleteActiveCard(getCardUid(card));
       navigate('/');
-      getBackend().showInfoMessage(`Delete ${card.title}`);
     } else if (archivedCard) {
       deleteCard(archivedCard);
       navigate('/');
-      getBackend().showInfoMessage(`Delete ${archivedCard.title}`);
     }
   }, [card, archivedCard, deleteActiveCard, deleteCard, navigate]);
 

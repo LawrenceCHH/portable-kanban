@@ -55,6 +55,12 @@ export const ArchiveCards = ({ cards }: Properties) => {
   const hoveredCardInfo = selectors.useHoveredCard();
   const setHoveredCard = actions.useSetHoveredCard();
 
+  const sortedCards = React.useMemo(
+    () =>
+      [...cards].sort((a, b) => (b.archivedAt ?? '').localeCompare(a.archivedAt ?? '')),
+    [cards],
+  );
+
   React.useEffect(() => {
     return () => {
       setHoveredCard(null);
@@ -116,12 +122,12 @@ export const ArchiveCards = ({ cards }: Properties) => {
           <div style={{ width: '100%', padding: '8px', textAlign: 'center' }}>
             <TextBaseBold>Archive Cards</TextBaseBold>
           </div>
-          {cards.length === 0 ? (
+          {sortedCards.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px 8px', color: 'var(--dark-text-color)', fontSize: '0.875rem' }}>
               No archived cards
             </div>
           ) : (
-            cards.map((c) => (
+            sortedCards.map((c) => (
               <ArchiveCard key={getCardUid(c)} data-uid={getCardUid(c)}>
                 <Card
                   card={c}

@@ -27,6 +27,23 @@ describe('ArchiveCards page', () => {
     expect(screen.getByText('Block: Backlog')).toBeInTheDocument();
   });
 
+  it('renders archived cards newest-first by archivedAt', async () => {
+    const oldest = createCard({ id: 'c1', title: 'Oldest', archivedAt: '2026-01-01T00:00:00.000Z' });
+    const newest = createCard({ id: 'c2', title: 'Newest', archivedAt: '2026-03-01T00:00:00.000Z' });
+    const middle = createCard({ id: 'c3', title: 'Middle', archivedAt: '2026-02-01T00:00:00.000Z' });
+
+    render(
+      <Provider>
+        <TestWrapper>
+          <ArchiveCards cards={[oldest, newest, middle]} />
+        </TestWrapper>
+      </Provider>,
+    );
+
+    const titles = screen.getAllByText(/^(Oldest|Newest|Middle)$/).map((el) => el.textContent);
+    expect(titles).toEqual(['Newest', 'Middle', 'Oldest']);
+  });
+
   it('keys cards sharing the same title by their distinct uid, without displaying it', async () => {
     const card1 = createCard({
       id: 'c1',
