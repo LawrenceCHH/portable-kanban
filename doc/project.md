@@ -99,6 +99,23 @@
 
 ## 3. 版本歷史更新紀錄 (Release History / Changelog)
 
+### v0.2.8 (2026-09-14)
+- **UI 精簡：封存卡片不再顯示 UID**
+  - 移除封存卡片列表 (`ArchiveCards.tsx`) 中每張卡片旁的 `#uid` 標籤顯示，以及 `ArchivedCardModal.tsx` 封存快照橫幅中的「UID: ...」列。
+  - UID 仍作為內部身分識別（React key、hover 刪除快捷鍵辨識重複標題卡片）持續使用，只是不再顯示於畫面上；改以 `data-uid` DOM 屬性保留供測試／除錯使用。
+- **修復：刪除卡片跳出多餘的第二次通知**
+  - `EditCard.tsx` 的 `performDeleteCard()` 過去在確認刪除後，會額外呼叫 `getBackend().showInfoMessage()` 觸發一個原生 VS Code 通知（「Delete <標題>」），使用者感覺像是跳了兩次警告。已移除此多餘通知，確認對話框本身與清單更新已足夠作為回饋。
+  - 已針對此路徑（Board hover+d 快捷鍵、EditCard 頁面 Delete 按鈕）新增自動化回歸測試，驗證「僅顯示一次確認對話框」且「按下 Cancel 卡片不會被刪除」。
+- **新功能：封存卡片依封存時間新到舊排序**
+  - `ArchiveCards.tsx` 面板過去依卡片原始陣列順序顯示（最早封存的卡片在最上方）。現在依 `archivedAt` 降冪排序，最新封存的卡片顯示在最上方。
+- **開發流程調整：VSIX 安裝方式**
+  - Claude Code（AI 助手）所在的沙箱環境沒有 `VSCODE_IPC_HOOK_CLI`，因此無法直接執行 `code --install-extension` 幫使用者安裝擴充套件。
+  - 往後的標準流程：每次修復完成後，於 `apps/vscode/package.json` 遞增 patch 版本號 → 重新建置 (`pnpm build:core && pnpm build:ui && pnpm --filter portable-kanban vsce:package`) → 產出新版 `.vsix` 至 `versions/` 並提交 → 由使用者自行在**真正的 VS Code 整合終端機**執行安裝指令（範例見下方）。
+  ```bash
+  code --install-extension versions/portable-kanban-0.2.8.vsix --force
+  ```
+  - 若使用 WSL + Windows 端 VS Code 桌面版，請注意實際載入的擴充套件目錄可能是 Windows 端 (`%USERPROFILE%\.vscode\extensions\harehare.portable-kanban-x.x.x`)，而非 WSL 端 (`~/.vscode-server/extensions/...`)；兩邊都可能各自存在一份已安裝的副本，版本落差會導致「明明修好了卻還是看到舊行為」的假象。安裝後務必完整關閉並重新開啟 `.kanban` 檔案分頁（或 Reload Window），確保 Webview 不是沿用舊的快取內容。
+
 ### v0.2.7 (2026-09-14)
 - **新功能與操作改進：卡片多選與批次封存快捷鍵**
   - 支援右上角浮動勾選框 (Select Checkbox) 與 `Ctrl+Click`（macOS 為 `Cmd+Click`）多選看板卡片。
@@ -247,4 +264,4 @@ pnpm lint
 
 ---
 
-*文檔版本：v0.2.7 ｜ 最後更新時間：2026-09-14*
+*文檔版本：v0.2.8 ｜ 最後更新時間：2026-09-14*
