@@ -330,8 +330,10 @@ export const App = ({ kanban: initialKanban, title, onSave, onQuit }: Props) => 
       setMode({ type: 'board' });
       return;
     }
+    const cardId = crypto.randomUUID();
     const newCard: Card = {
-      id: crypto.randomUUID(),
+      id: cardId,
+      uid: cardId,
       listId: kanban.lists[listIndex]?.id ?? '',
       title: newTitle.trim(),
       description: '',

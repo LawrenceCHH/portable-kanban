@@ -26,6 +26,32 @@ describe('ArchiveCards page', () => {
     expect(screen.getByText('Block: Backlog')).toBeInTheDocument();
   });
 
+  it('handles multiple cards with duplicate names independently on delete shortcut', async () => {
+    const card1 = createCard({
+      id: 'c1',
+      uid: 'c1-unique-uid',
+      title: 'Duplicate Title',
+      archivedFromList: { id: 'l1', title: 'Backlog' },
+    });
+    const card2 = createCard({
+      id: 'c2',
+      uid: 'c2-unique-uid',
+      title: 'Duplicate Title',
+      archivedFromList: { id: 'l1', title: 'Backlog' },
+    });
+
+    render(
+      <Provider>
+        <TestWrapper>
+          <ArchiveCards cards={[card1, card2]} />
+        </TestWrapper>
+      </Provider>,
+    );
+
+    expect(screen.getByText('#c1-uniqu')).toBeInTheDocument();
+    expect(screen.getByText('#c2-uniqu')).toBeInTheDocument();
+  });
+
   it('renders empty state when no cards are archived', async () => {
     render(
       <Provider>
@@ -39,3 +65,4 @@ describe('ArchiveCards page', () => {
     expect(screen.getByText('No archived cards')).toBeInTheDocument();
   });
 });
+

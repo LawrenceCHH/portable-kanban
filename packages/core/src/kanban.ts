@@ -53,6 +53,7 @@ export type ArchivedFromList = {
 
 export type Card = {
   id: string;
+  uid?: string;
   listId: string;
   title: string;
   description: string;
@@ -102,6 +103,7 @@ export const newCard = (id: string, listId: string, listTitle?: string): Card =>
   const now = new Date().toISOString();
   return {
     id,
+    uid: id,
     listId,
     title: '',
     description: '',
@@ -264,6 +266,9 @@ export const updateCard = (lists: List[], list: List, card: Card): List[] => {
 };
 
 export const deleteCard = (archiveCards: Card[], card: Card): Card[] => {
+  if (card.uid) {
+    return archiveCards.filter((c) => (c.uid ? c.uid !== card.uid : c.id !== card.id));
+  }
   return archiveCards.filter((c) => c.id !== card.id);
 };
 
@@ -287,7 +292,13 @@ export const copyCard = (lists: List[], card: Card): List[] => {
     l.id === card.listId
       ? {
           ...l,
-          cards: [...l.cards, { ...card, id: uuid() }],
+          cards: [
+            ...l.cards,
+            (() => {
+              const newId = uuid();
+              return { ...card, id: newId, uid: newId };
+            })(),
+          ],
         }
       : l,
   );
@@ -766,6 +777,7 @@ const activityDecoder: Decoder<CardActivity> = object({
 
 const cardDecoder: Decoder<Card> = object({
   id: string(),
+  uid: optional(string()),
   listId: string(),
   title: string(),
   description: string(),
@@ -777,7 +789,10 @@ const cardDecoder: Decoder<Card> = object({
   archivedAt: optional(string()),
   archivedFromList: optional(archivedFromListDecoder),
   activities: optional(array(activityDecoder)),
-});
+}).map((c) => ({
+  ...c,
+  uid: c.uid || c.id,
+}));
 
 const listDecoder: Decoder<List> = object({
   id: string(),

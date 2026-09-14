@@ -3,17 +3,21 @@ import * as React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import type { Card, Kanban, List } from 'portable-kanban-core';
 
-export const createCard = (overrides: Partial<Card> = {}): Card => ({
-  id: 'card-1',
-  listId: 'list-1',
-  title: 'Test Card',
-  description: '',
-  dueDate: undefined,
-  labels: [],
-  checkboxes: [],
-  comments: [],
-  ...overrides,
-});
+export const createCard = (overrides: Partial<Card> = {}): Card => {
+  const id = overrides.id ?? 'card-1';
+  return {
+    id,
+    uid: overrides.uid ?? id,
+    listId: 'list-1',
+    title: 'Test Card',
+    description: '',
+    dueDate: undefined,
+    labels: [],
+    checkboxes: [],
+    comments: [],
+    ...overrides,
+  };
+};
 
 export const createList = (overrides: Partial<List> = {}): List => ({
   id: 'list-1',

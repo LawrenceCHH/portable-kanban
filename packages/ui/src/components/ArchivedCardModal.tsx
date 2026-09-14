@@ -252,6 +252,7 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
       // Ctrl + d / Cmd + d: directly delete without confirmation
       if (isCtrlOrCmd && keyLower === 'd') {
         e.preventDefault();
+        e.stopPropagation();
         onDelete(card);
         onClose();
         return;
@@ -260,11 +261,14 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
       // d (without Ctrl): show delete confirmation
       if (!isCtrlOrCmd && !e.altKey && keyLower === 'd') {
         e.preventDefault();
+        e.stopPropagation();
         setShowConfirmDelete(true);
         return;
       }
 
       if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
         onClose();
       }
     };
@@ -298,6 +302,10 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
             <span>
               <strong>Archived At:</strong> {archivedDate}
             </span>
+          </SnapshotItem>
+          <SnapshotItem>
+            <span style={{ fontWeight: 600, color: 'var(--primary-color)', fontSize: '0.8rem' }}>UID:</span>
+            <span style={{ fontFamily: 'monospace' }}>{card.uid || card.id}</span>
           </SnapshotItem>
         </SnapshotBanner>
 
@@ -449,7 +457,7 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
       {showConfirmDelete && (
         <ConfirmDialog
           title="Delete Archived Card"
-          message={`Are you sure you want to permanently delete "${card.title || 'Untitled Card'}"?`}
+          message={`Are you sure you want to permanently delete "${card.title || 'Untitled Card'}" (#${(card.uid || card.id).slice(0, 8)})?`}
           confirmText="Delete"
           cancelText="Cancel"
           onConfirm={() => {

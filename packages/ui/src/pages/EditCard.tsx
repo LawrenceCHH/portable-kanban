@@ -549,7 +549,7 @@ const EditCard = () => {
       {showDeleteConfirm && (
         <ConfirmDialog
           title="Delete Card"
-          message={`Are you sure you want to permanently delete "${(card ?? archivedCard)?.title || 'Untitled Card'}"?`}
+          message={`Are you sure you want to permanently delete "${(card ?? archivedCard)?.title || 'Untitled Card'}" (#${(((card ?? archivedCard)?.uid || (card ?? archivedCard)?.id) ?? '').slice(0, 8)})?`}
           confirmText="Delete"
           cancelText="Cancel"
           onConfirm={() => {

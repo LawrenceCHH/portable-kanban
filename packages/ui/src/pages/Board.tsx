@@ -15,7 +15,7 @@ import { CSS } from '@dnd-kit/utilities';
 import * as React from 'react';
 import { ScrollContainer } from 'react-indiana-drag-scroll';
 import { styled } from 'styled-components';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Header } from '../components/Header';
 import { List } from '../components/List';
@@ -133,6 +133,7 @@ const Board = () => {
   const archiveCards = kanbanActions.useArchiveCards();
 
   const navigate = useNavigate();
+  const location = useLocation();
   const hoveredCardInfo = selectors.useHoveredCard();
   const deleteActiveCard = kanbanActions.useDeleteActiveCard();
   const deleteActiveCards = kanbanActions.useDeleteActiveCards();
@@ -169,6 +170,9 @@ const Board = () => {
   // - Escape: clear selection
   React.useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Only handle board shortcuts when directly on board view
+      if (location.pathname !== '/') return;
+
       // If a confirmation dialog is active, let it handle its own keys
       if (deleteConfirmation) return;
 
@@ -209,9 +213,10 @@ const Board = () => {
           });
         } else if (hoveredCardInfo) {
           e.preventDefault();
+          const uidTag = (hoveredCardInfo.card.uid || hoveredCardInfo.card.id).slice(0, 8);
           setDeleteConfirmation({
             cards: [hoveredCardInfo.card],
-            message: `Are you sure you want to permanently delete "${hoveredCardInfo.card.title || 'Untitled Card'}"?`,
+            message: `Are you sure you want to permanently delete "${hoveredCardInfo.card.title || 'Untitled Card'}" (#${uidTag})?`,
           });
         }
         return;
@@ -281,6 +286,7 @@ const Board = () => {
     copyCard,
     toggleSelectCard,
     navigate,
+    location.pathname,
   ]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));

@@ -402,8 +402,10 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       const listResult = findList(kanban, String(a.list));
       if (!listResult) throw new Error(`List not found: ${a.list}`);
 
+      const cardId = crypto.randomUUID();
       const newCard: Card = {
-        id: crypto.randomUUID(),
+        id: cardId,
+        uid: cardId,
         listId: listResult.list.id,
         title: String(a.title),
         description: a.description ? String(a.description) : '',

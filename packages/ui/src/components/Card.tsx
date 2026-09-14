@@ -257,6 +257,7 @@ export const Card = ({
   return (
     <Container
       tabIndex={0}
+      title={`UID: ${state.card.uid || state.card.id}`}
       $selected={isCardSelected}
       onMouseEnter={() => {
         setHoveredCard({ card: state.card, listId: state.card.listId });

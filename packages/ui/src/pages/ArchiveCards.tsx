@@ -4,7 +4,7 @@ import { styled } from 'styled-components';
 import { Card } from '../components/Card';
 import { TextBaseBold } from '../components/shared/Text';
 import { type Card as CardModel } from 'portable-kanban-core';
-import { kanbanActions, selectors } from '../store';
+import { actions, kanbanActions, selectors } from '../store';
 
 const Overlay = styled.div`
   width: 100%;
@@ -53,6 +53,13 @@ export const ArchiveCards = ({ cards }: Properties) => {
   const [selectedArchivedCard, setSelectedArchivedCard] = React.useState<CardModel | null>(null);
   const [cardToDelete, setCardToDelete] = React.useState<CardModel | null>(null);
   const hoveredCardInfo = selectors.useHoveredCard();
+  const setHoveredCard = actions.useSetHoveredCard();
+
+  React.useEffect(() => {
+    return () => {
+      setHoveredCard(null);
+    };
+  }, [setHoveredCard]);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -120,23 +127,31 @@ export const ArchiveCards = ({ cards }: Properties) => {
                   card={c}
                   isEdit={false}
                   editable={false}
+                  isSelected={false}
                   onClick={() => {
                     setSelectedArchivedCard(c);
                   }}
                 />
-                {c.archivedFromList?.title && (
-                  <div
-                    style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--dark-text-color)',
-                      marginTop: '-4px',
-                      marginBottom: '6px',
-                      paddingLeft: '4px',
-                    }}
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--dark-text-color)',
+                    marginTop: '-4px',
+                    marginBottom: '6px',
+                    paddingLeft: '4px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span>{c.archivedFromList?.title ? `Block: ${c.archivedFromList.title}` : ''}</span>
+                  <span
+                    style={{ fontFamily: 'monospace', opacity: 0.75 }}
+                    title={`UID: ${c.uid || c.id}`}
                   >
-                    Block: {c.archivedFromList.title}
-                  </div>
-                )}
+                    #{(c.uid || c.id).slice(0, 8)}
+                  </span>
+                </div>
                 <Menus>
                   <MenuItem
                     onClick={(e: React.MouseEvent<HTMLDivElement>) => {
@@ -179,7 +194,7 @@ export const ArchiveCards = ({ cards }: Properties) => {
       {cardToDelete && (
         <ConfirmDialog
           title="Delete Archived Card"
-          message={`Are you sure you want to permanently delete "${cardToDelete.title || 'Untitled Card'}"?`}
+          message={`Are you sure you want to permanently delete "${cardToDelete.title || 'Untitled Card'}" (#${(cardToDelete.uid || cardToDelete.id).slice(0, 8)})?`}
           confirmText="Delete"
           cancelText="Cancel"
           onConfirm={() => {
