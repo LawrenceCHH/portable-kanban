@@ -2,7 +2,7 @@ import { format } from 'date-fns/format';
 import { sub } from 'date-fns/sub';
 import * as React from 'react';
 import { FaRegComment } from 'react-icons/fa';
-import { MdDateRange } from 'react-icons/md';
+import { MdCheckBox, MdCheckBoxOutlineBlank, MdDateRange } from 'react-icons/md';
 import { RiTaskLine } from 'react-icons/ri';
 import { Link, useLocation } from 'react-router-dom';
 import { styled } from 'styled-components';
@@ -11,7 +11,37 @@ import { type Card as CardModel } from 'portable-kanban-core';
 import { actions, selectors } from '../store';
 import { TextXs } from './shared/Text';
 
+const SelectButton = styled.button<{ $visible: boolean; $selected: boolean }>`
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: ${({ $selected }) => ($selected ? 'var(--primary-color)' : 'var(--secondary-background-color)')};
+  color: ${({ $selected }) => ($selected ? '#fff' : 'var(--text-color)')};
+  border: 1px solid ${({ $selected }) => ($selected ? 'var(--primary-color)' : 'var(--form-border-color)')};
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+  pointer-events: ${({ $visible }) => ($visible ? 'auto' : 'none')};
+  transition:
+    opacity 0.15s ease,
+    background-color 0.15s ease;
+  z-index: 2;
+
+  &:hover {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+  }
+`;
+
 const Container = styled.div<{ $selected?: boolean }>`
+  position: relative;
   min-height: 20px;
   padding: 8px;
   margin-bottom: 8px;
@@ -25,12 +55,19 @@ const Container = styled.div<{ $selected?: boolean }>`
   transition:
     box-shadow 0.15s ease,
     background-color 0.15s ease;
+  outline: none;
+
   &:hover {
     background-color: var(--hover-color);
     box-shadow: ${({ $selected }) =>
       $selected
         ? '0 0 0 2px var(--primary-color), 0 4px 10px rgba(0, 0, 0, 0.15)'
         : '0 4px 10px rgba(0, 0, 0, 0.15)'};
+  }
+
+  &:hover ${SelectButton} {
+    opacity: 1;
+    pointer-events: auto;
   }
 `;
 
@@ -218,6 +255,7 @@ export const Card = ({
 
   return (
     <Container
+      tabIndex={0}
       $selected={isCardSelected}
       onClick={(e: React.MouseEvent<HTMLDivElement>) => {
         // Prevent click from bubbling up when in edit mode
@@ -242,6 +280,26 @@ export const Card = ({
         }
       }}
     >
+      {!state.isEdit && (
+        <SelectButton
+          type="button"
+          aria-label={isCardSelected ? 'Deselect card' : 'Select card'}
+          title={isCardSelected ? 'Deselect card (or Ctrl+Click)' : 'Select card (or Ctrl+Click)'}
+          $visible={isCardSelected || selectedCards.length > 0}
+          $selected={isCardSelected}
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onSelect) {
+              onSelect(state.card);
+            } else {
+              toggleSelectCard(state.card.id);
+            }
+          }}
+        >
+          {isCardSelected ? <MdCheckBox size={14} /> : <MdCheckBoxOutlineBlank size={14} />}
+        </SelectButton>
+      )}
       {editable ? (
         state.isEdit ? (
           <Input

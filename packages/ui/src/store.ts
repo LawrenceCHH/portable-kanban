@@ -11,7 +11,7 @@ import {
   addList,
   archiveAllCardInList,
   archiveCard,
-  archiveCards,
+  archiveCards as archiveCardsFn,
   archiveList,
   type Card,
   type CheckBox,
@@ -56,7 +56,7 @@ const selectedCardIdsAtom = atom<string[]>([]);
 
 const lists = atom<List[]>([]);
 const archiveLists = atom<ArchiveList[]>([]);
-const archiveCards = atom<Card[]>([]);
+const rawArchiveCardsAtom = atom<Card[]>([]);
 const settings = atom<Settings>({ labels: [] });
 
 // Flag to prevent edit messages during file load initialization
@@ -83,10 +83,10 @@ const archiveListsAtom = atom(
   },
 );
 const archiveCardsAtom = atom(
-  (get) => get(archiveCards),
+  (get) => get(rawArchiveCardsAtom),
   (get, set, newValue: Card[]) => {
     const kanban: Kanban = get(kanbanAtom);
-    set(archiveCards, newValue);
+    set(rawArchiveCardsAtom, newValue);
     getBackend().saveKanban(
       {
         ...kanban,
@@ -114,13 +114,13 @@ const settingsAtom = atom(
 const kanbanAtom = atom(
   (get) => ({
     lists: get(lists),
-    archive: { lists: get(archiveLists), cards: get(archiveCards) },
+    archive: { lists: get(archiveLists), cards: get(rawArchiveCardsAtom) },
     settings: get(settings),
   }),
   (_get, set, newValue: Kanban) => {
     set(lists, newValue.lists);
     set(archiveLists, newValue.archive.lists);
-    set(archiveCards, newValue.archive.cards);
+    set(rawArchiveCardsAtom, newValue.archive.cards);
     set(settings, newValue.settings);
     if (!isLoadingFromFile) {
       getBackend().saveKanban(newValue, 'edit');
@@ -396,7 +396,7 @@ export const kanbanActions = {
     const setSelectedCards = useSetAtom(selectedCardIdsAtom);
     return React.useCallback(
       (cardIds: string[]) => {
-        setKanban(archiveCards(kanban, cardIds));
+        setKanban(archiveCardsFn(kanban, cardIds));
         setSelectedCards([]);
       },
       [kanban, setKanban, setSelectedCards],

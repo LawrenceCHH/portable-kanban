@@ -396,34 +396,33 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
         {/* Action Row: Restore / Delete / Close */}
         <ActionRow>
           <Button
+            text="Restore"
+            icon={<MdRestore />}
             type="primary"
+            disabled={false}
             onClick={() => {
               onRestore(card);
               onClose();
             }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <MdRestore />
-              <span>Restore</span>
-            </div>
-          </Button>
+          />
           <Button
+            text="Delete"
+            icon={<MdDeleteOutline />}
             type="danger"
+            disabled={false}
             onClick={() => {
               if (window.confirm(`Are you sure you want to permanently delete "${card.title}"?`)) {
                 onDelete(card);
                 onClose();
               }
             }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <MdDeleteOutline />
-              <span>Delete</span>
-            </div>
-          </Button>
-          <Button type="secondary" onClick={onClose}>
-            Close
-          </Button>
+          />
+          <Button
+            text="Close"
+            type="secondary"
+            disabled={false}
+            onClick={onClose}
+          />
         </ActionRow>
       </Container>
     </Overlay>

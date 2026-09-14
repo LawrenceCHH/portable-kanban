@@ -329,6 +329,34 @@ const EditCard = () => {
     getBackend().showInfoMessage(`Delete ${archivedCard.title}`);
   }, [list, card]);
 
+  // Keyboard shortcut listener: 'Escape' to close modal, 'a' to archive card when not editing text
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isEditingText =
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          (activeEl as HTMLElement).isContentEditable);
+
+      if (isEditingText) return;
+
+      if (e.key === 'Escape') {
+        navigate('/');
+      } else if ((e.key === 'a' || e.key === 'A') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (!isArchived) {
+          e.preventDefault();
+          handleArchiveCard();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [navigate, isArchived, handleArchiveCard]);
+
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <Overlay
