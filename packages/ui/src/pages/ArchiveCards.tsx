@@ -4,7 +4,7 @@ import { styled } from 'styled-components';
 import { Card } from '../components/Card';
 import { TextBaseBold } from '../components/shared/Text';
 import { type Card as CardModel } from 'portable-kanban-core';
-import { kanbanActions } from '../store';
+import { kanbanActions, selectors } from '../store';
 
 const Overlay = styled.div`
   width: 100%;
