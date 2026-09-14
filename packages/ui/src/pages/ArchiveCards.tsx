@@ -40,6 +40,7 @@ const MenuItem = styled.div`
 `;
 
 import { ArchivedCardModal } from '../components/ArchivedCardModal';
+import { ConfirmDialog } from '../components/shared/ConfirmDialog';
 
 type Properties = {
   cards: CardModel[];
@@ -50,6 +51,52 @@ export const ArchiveCards = ({ cards }: Properties) => {
   const deleteCard = kanbanActions.useDeleteCard();
   const navigate = useNavigate();
   const [selectedArchivedCard, setSelectedArchivedCard] = React.useState<CardModel | null>(null);
+  const [cardToDelete, setCardToDelete] = React.useState<CardModel | null>(null);
+  const hoveredCardInfo = selectors.useHoveredCard();
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // If modal or confirm is open, let it handle its own keys
+      if (selectedArchivedCard || cardToDelete) return;
+
+      const activeEl = document.activeElement;
+      const isEditingText =
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          (activeEl as HTMLElement).isContentEditable);
+
+      if (isEditingText) return;
+
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      const keyLower = e.key.toLowerCase();
+
+      // Ctrl + d / Cmd + d: directly delete hovered archived card
+      if (isCtrlOrCmd && keyLower === 'd') {
+        if (hoveredCardInfo) {
+          e.preventDefault();
+          deleteCard(hoveredCardInfo.card);
+        }
+        return;
+      }
+
+      // d (without Ctrl): open delete confirmation dialog for hovered archived card
+      if (!isCtrlOrCmd && !e.altKey && keyLower === 'd') {
+        if (hoveredCardInfo) {
+          e.preventDefault();
+          setCardToDelete(hoveredCardInfo.card);
+        }
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        navigate('/');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedArchivedCard, cardToDelete, hoveredCardInfo, deleteCard, navigate]);
 
   return (
     <>
@@ -102,9 +149,7 @@ export const ArchiveCards = ({ cards }: Properties) => {
                   <MenuItem
                     onClick={(e: React.MouseEvent<HTMLDivElement>) => {
                       e.stopPropagation();
-                      if (window.confirm(`Are you sure you want to permanently delete "${c.title}"?`)) {
-                        deleteCard(c);
-                      }
+                      setCardToDelete(c);
                     }}
                   >
                     Delete
@@ -128,6 +173,20 @@ export const ArchiveCards = ({ cards }: Properties) => {
             deleteCard(c);
             setSelectedArchivedCard(null);
           }}
+        />
+      )}
+
+      {cardToDelete && (
+        <ConfirmDialog
+          title="Delete Archived Card"
+          message={`Are you sure you want to permanently delete "${cardToDelete.title || 'Untitled Card'}"?`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={() => {
+            deleteCard(cardToDelete);
+            setCardToDelete(null);
+          }}
+          onCancel={() => setCardToDelete(null)}
         />
       )}
     </>

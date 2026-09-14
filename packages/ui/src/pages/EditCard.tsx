@@ -21,6 +21,7 @@ import { LabelList } from '../components/Label/List';
 import { AddComment } from '../components/shared/AddComment';
 import { AddItem } from '../components/shared/AddItem';
 import { Button } from '../components/shared/Button';
+import { ConfirmDialog } from '../components/shared/ConfirmDialog';
 import { DatePicker } from '../components/shared/DatePicker';
 import { Description } from '../components/shared/Description';
 import { ProgressBar } from '../components/shared/ProgressBar';
@@ -145,6 +146,7 @@ const EditCard = () => {
   const archiveCard = kanbanActions.useArchiveCard();
   const restoreCard = kanbanActions.useRestoreCard();
   const deleteCard = kanbanActions.useDeleteCard();
+  const deleteActiveCard = kanbanActions.useDeleteActiveCard();
   const copyCard = kanbanActions.useCopyCard();
 
   const { listId, cardId } = useParams();
@@ -157,6 +159,7 @@ const EditCard = () => {
     [card, cardId, archiveCards],
   );
   const [isArchived, setArchived] = React.useState(Boolean(archivedCard));
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 
   // Navigate back to board when the card cannot be found (e.g. after deletion or stale URL).
   // Guard on lists.length so we don't redirect before initial data is loaded.
@@ -318,20 +321,31 @@ const EditCard = () => {
     setArchived(false);
   }, [list, card]);
 
-  const handleDeleteCard = React.useCallback(() => {
-    if (!list || !archivedCard) {
-      return;
+  const performDeleteCard = React.useCallback(() => {
+    if (card) {
+      deleteActiveCard(card.id);
+      navigate('/');
+      getBackend().showInfoMessage(`Delete ${card.title}`);
+    } else if (archivedCard) {
+      deleteCard(archivedCard);
+      navigate('/');
+      getBackend().showInfoMessage(`Delete ${archivedCard.title}`);
     }
+  }, [card, archivedCard, deleteActiveCard, deleteCard, navigate]);
 
-    deleteCard(archivedCard);
-    navigate('/');
+  const handleDeleteCard = React.useCallback(() => {
+    setShowDeleteConfirm(true);
+  }, []);
 
-    getBackend().showInfoMessage(`Delete ${archivedCard.title}`);
-  }, [list, card]);
-
-  // Keyboard shortcut listener: 'Escape' to close modal, 'a' to archive card when not editing text
+  // Keyboard shortcut listener:
+  // - 'Escape' to close modal
+  // - 'Ctrl+d' / 'Cmd+d' to directly delete without confirmation
+  // - 'd' to show delete confirmation dialog
+  // - 'a' to archive card when not editing text
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (showDeleteConfirm) return;
+
       const activeEl = document.activeElement;
       const isEditingText =
         activeEl &&
@@ -341,9 +355,26 @@ const EditCard = () => {
 
       if (isEditingText) return;
 
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      const keyLower = e.key.toLowerCase();
+
+      // Ctrl + d / Cmd + d: directly delete without confirmation
+      if (isCtrlOrCmd && keyLower === 'd') {
+        e.preventDefault();
+        performDeleteCard();
+        return;
+      }
+
+      // d (without Ctrl): show delete confirmation
+      if (!isCtrlOrCmd && !e.altKey && keyLower === 'd') {
+        e.preventDefault();
+        setShowDeleteConfirm(true);
+        return;
+      }
+
       if (e.key === 'Escape') {
         navigate('/');
-      } else if ((e.key === 'a' || e.key === 'A') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      } else if ((e.key === 'a' || e.key === 'A') && !isCtrlOrCmd && !e.altKey) {
         if (!isArchived) {
           e.preventDefault();
           handleArchiveCard();
@@ -355,7 +386,7 @@ const EditCard = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [navigate, isArchived, handleArchiveCard]);
+  }, [navigate, isArchived, handleArchiveCard, performDeleteCard, showDeleteConfirm]);
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -505,18 +536,29 @@ const EditCard = () => {
               <Button text="Archive" icon={<MdOutlineArchive />} disabled={false} onClick={handleArchiveCard} />
             )}
             {isArchived && <Button text="Restore" icon={<MdRestore />} disabled={false} onClick={handleRestoreCard} />}
-            {isArchived && (
-              <Button
-                text="Delete"
-                icon={<MdOutlineDeleteOutline />}
-                type="danger"
-                disabled={false}
-                onClick={handleDeleteCard}
-              />
-            )}
+            <Button
+              text="Delete"
+              icon={<MdOutlineDeleteOutline />}
+              type="danger"
+              disabled={false}
+              onClick={handleDeleteCard}
+            />
           </BUttons>
         </Container>
       </Overlay>
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Delete Card"
+          message={`Are you sure you want to permanently delete "${(card ?? archivedCard)?.title || 'Untitled Card'}"?`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={() => {
+            setShowDeleteConfirm(false);
+            performDeleteCard();
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </DndContext>
   );
 };

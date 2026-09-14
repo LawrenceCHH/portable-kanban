@@ -30,6 +30,8 @@ import {
   moveCheckBox,
   moveList,
   removeArchivedList,
+  removeCardFromList,
+  removeCardsFromList,
   restoreCard,
   restoreList,
   type Settings,
@@ -53,6 +55,11 @@ const showModalAtom = atom<boolean>(false);
 const menuAtom = atom<string | undefined>(undefined);
 const sortOrderAtom = atom<Record<string, 'none' | 'titleAsc' | 'titleDesc'>>({});
 const selectedCardIdsAtom = atom<string[]>([]);
+export type HoveredCardInfo = {
+  card: Card;
+  listId: string;
+};
+const hoveredCardAtom = atom<HoveredCardInfo | null>(null);
 
 const lists = atom<List[]>([]);
 const archiveLists = atom<ArchiveList[]>([]);
@@ -165,6 +172,7 @@ type Selectors = {
   useMenu: () => string | undefined;
   useSortOrder: () => Record<string, 'none' | 'titleAsc' | 'titleDesc'>;
   useSelectedCardIds: () => string[];
+  useHoveredCard: () => HoveredCardInfo | null;
 };
 
 export const selectors: Selectors = {
@@ -182,6 +190,7 @@ export const selectors: Selectors = {
   useMenu: () => useAtomValue(menuAtom),
   useSortOrder: () => useAtomValue(sortOrderAtom),
   useSelectedCardIds: () => useAtomValue(selectedCardIdsAtom),
+  useHoveredCard: () => useAtomValue(hoveredCardAtom),
 };
 
 export const actions = {
@@ -252,6 +261,9 @@ export const actions = {
     return React.useCallback((cardIds: string[]) => {
       setState(cardIds);
     }, []);
+  },
+  useSetHoveredCard() {
+    return useSetAtom(hoveredCardAtom);
   },
 };
 
@@ -353,6 +365,24 @@ export const kanbanActions = {
         setArchiveCards(deleteCard(archiveCards, card));
       },
       [archiveCards, setArchiveCards],
+    );
+  },
+  useDeleteActiveCard() {
+    const [lists, setLists] = useAtom(listsAtom);
+    return React.useCallback(
+      (cardId: string) => {
+        setLists(removeCardFromList(lists, cardId));
+      },
+      [lists, setLists],
+    );
+  },
+  useDeleteActiveCards() {
+    const [lists, setLists] = useAtom(listsAtom);
+    return React.useCallback(
+      (cardIds: string[]) => {
+        setLists(removeCardsFromList(lists, cardIds));
+      },
+      [lists, setLists],
     );
   },
   useCopyCard() {

@@ -14,6 +14,7 @@ import {
 import { styled } from 'styled-components';
 import { type Card as CardModel } from 'portable-kanban-core';
 import { Button } from './shared/Button';
+import { ConfirmDialog } from './shared/ConfirmDialog';
 
 const Overlay = styled.div`
   width: 100vw;
@@ -238,15 +239,38 @@ type Properties = {
 };
 
 export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Properties) => {
+  const [showConfirmDelete, setShowConfirmDelete] = React.useState(false);
+
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // If confirmation dialog is open, let it handle its own keys
+      if (showConfirmDelete) return;
+
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      const keyLower = e.key.toLowerCase();
+
+      // Ctrl + d / Cmd + d: directly delete without confirmation
+      if (isCtrlOrCmd && keyLower === 'd') {
+        e.preventDefault();
+        onDelete(card);
+        onClose();
+        return;
+      }
+
+      // d (without Ctrl): show delete confirmation
+      if (!isCtrlOrCmd && !e.altKey && keyLower === 'd') {
+        e.preventDefault();
+        setShowConfirmDelete(true);
+        return;
+      }
+
       if (e.key === 'Escape') {
         onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [card, onClose, onDelete, showConfirmDelete]);
 
   const archivedBlockTitle = card.archivedFromList?.title ?? 'Unknown Block';
   const archivedDate = formatIso(card.archivedAt);
@@ -411,10 +435,7 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
             type="danger"
             disabled={false}
             onClick={() => {
-              if (window.confirm(`Are you sure you want to permanently delete "${card.title}"?`)) {
-                onDelete(card);
-                onClose();
-              }
+              setShowConfirmDelete(true);
             }}
           />
           <Button
@@ -425,6 +446,20 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
           />
         </ActionRow>
       </Container>
+      {showConfirmDelete && (
+        <ConfirmDialog
+          title="Delete Archived Card"
+          message={`Are you sure you want to permanently delete "${card.title || 'Untitled Card'}"?`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={() => {
+            setShowConfirmDelete(false);
+            onDelete(card);
+            onClose();
+          }}
+          onCancel={() => setShowConfirmDelete(false)}
+        />
+      )}
     </Overlay>
   );
 };

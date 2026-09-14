@@ -267,6 +267,21 @@ export const deleteCard = (archiveCards: Card[], card: Card): Card[] => {
   return archiveCards.filter((c) => c.id !== card.id);
 };
 
+export const removeCardFromList = (lists: List[], cardId: string): List[] => {
+  return lists.map((l) => ({
+    ...l,
+    cards: l.cards.filter((c) => c.id !== cardId),
+  }));
+};
+
+export const removeCardsFromList = (lists: List[], cardIds: string[]): List[] => {
+  const set = new Set(cardIds);
+  return lists.map((l) => ({
+    ...l,
+    cards: l.cards.filter((c) => !set.has(c.id)),
+  }));
+};
+
 export const copyCard = (lists: List[], card: Card): List[] => {
   return lists.map((l) =>
     l.id === card.listId

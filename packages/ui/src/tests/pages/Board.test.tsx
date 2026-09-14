@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'jotai';
 import { describe, expect, it } from 'vitest';
@@ -121,5 +121,49 @@ describe('Board', () => {
     await new Promise((r) => setTimeout(r, 400));
     expect(screen.queryByText('Add dark mode')).not.toBeInTheDocument();
     expect(screen.getByText('Fix login bug')).toBeInTheDocument();
+  });
+
+  it('directly deletes hovered card on Ctrl+d', async () => {
+    const card = createCard({ id: 'c1', listId: 'l1', title: 'Hover Delete Target' });
+    const list = createList({ id: 'l1', title: 'Tasks', cards: [card] });
+    const kanban = createKanban({ lists: [list] });
+    renderBoard(kanban);
+
+    const cardEl = await screen.findByText('Hover Delete Target');
+    // Hover over card
+    const cardContainer = cardEl.closest('[tabindex="0"]')!;
+    fireEvent.mouseEnter(cardContainer);
+
+    // Press Ctrl + d
+    fireEvent.keyDown(window, { key: 'd', ctrlKey: true });
+
+    // The card should be deleted directly
+    expect(screen.queryByText('Hover Delete Target')).not.toBeInTheDocument();
+  });
+
+  it('shows confirmation modal on "d" when hovered and deletes upon confirm', async () => {
+    const card = createCard({ id: 'c1', listId: 'l1', title: 'Card To Confirm Delete' });
+    const list = createList({ id: 'l1', title: 'Tasks', cards: [card] });
+    const kanban = createKanban({ lists: [list] });
+    renderBoard(kanban);
+
+    const cardEl = await screen.findByText('Card To Confirm Delete');
+    const cardContainer = cardEl.closest('[tabindex="0"]')!;
+    fireEvent.mouseEnter(cardContainer);
+
+    // Press 'd'
+    fireEvent.keyDown(window, { key: 'd' });
+
+    // Confirm dialog should be shown
+    expect(screen.getByText('Delete Card')).toBeInTheDocument();
+    expect(screen.getByText(/Are you sure you want to permanently delete/i)).toBeInTheDocument();
+
+    // Confirm deletion
+    const deleteBtns = screen.getAllByRole('button', { name: /Delete/i });
+    const deleteBtn = deleteBtns[deleteBtns.length - 1];
+    fireEvent.click(deleteBtn);
+
+    // Card should now be deleted
+    expect(screen.queryByText('Card To Confirm Delete')).not.toBeInTheDocument();
   });
 });

@@ -15,10 +15,12 @@ import { CSS } from '@dnd-kit/utilities';
 import * as React from 'react';
 import { ScrollContainer } from 'react-indiana-drag-scroll';
 import { styled } from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Header } from '../components/Header';
 import { List } from '../components/List';
 import { AddItem } from '../components/shared/AddItem';
+import { ConfirmDialog } from '../components/shared/ConfirmDialog';
 import {
   moveCard as moveCardFn,
   moveCardAcrossList as moveCardAcrossListFn,
@@ -65,9 +67,13 @@ const BatchActionBar = styled.div`
   border: 1px solid var(--form-border-color);
 `;
 
-const BatchButton = styled.button<{ $variant?: 'primary' | 'secondary' }>`
-  background-color: ${({ $variant }) =>
-    $variant === 'secondary' ? 'transparent' : 'var(--primary-color)'};
+const BatchButton = styled.button<{ $variant?: 'primary' | 'secondary' | 'danger' }>`
+  background: ${({ $variant }) =>
+    $variant === 'danger'
+      ? 'var(--danger-color)'
+      : $variant === 'secondary'
+        ? 'transparent'
+        : 'var(--primary-color)'};
   color: ${({ $variant }) =>
     $variant === 'secondary' ? 'var(--text-color)' : '#fff'};
   border: ${({ $variant }) =>
@@ -126,9 +132,24 @@ const Board = () => {
   const clearSelectedCards = actions.useClearSelectedCards();
   const archiveCards = kanbanActions.useArchiveCards();
 
+  const navigate = useNavigate();
+  const hoveredCardInfo = selectors.useHoveredCard();
+  const deleteActiveCard = kanbanActions.useDeleteActiveCard();
+  const deleteActiveCards = kanbanActions.useDeleteActiveCards();
+  const copyCard = kanbanActions.useCopyCard();
+  const toggleSelectCard = actions.useToggleSelectCard();
+
   const [showAddListInput, setShowAddListInput] = React.useState(false);
   const [activeDrag, setActiveDrag] = React.useState<ActiveDrag>(null);
   const [localLists, setLocalLists] = React.useState<ListModel[] | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = React.useState<{
+    cards: CardModel[];
+    message: string;
+  } | null>(null);
+
+  // During drag use local state for rendering; otherwise use store state
+  const lists = localLists ?? storeLists;
+
   // Ref for synchronous access in callbacks without stale closures
   const localListsRef = React.useRef<ListModel[] | null>(null);
   // Cache the dragged card/list at drag start to avoid searching on every onDragOver
@@ -138,9 +159,19 @@ const Board = () => {
   const dragOverRafRef = React.useRef<number | null>(null);
   const pendingDragOverRef = React.useRef<DragOverEvent | null>(null);
 
-  // Global key listener for shortcuts: 'a' (batch archive), 'Escape' (clear selection)
+  // Global key listener for shortcuts:
+  // - Ctrl+D / Cmd+D: directly delete hovered card or selected cards
+  // - d: show delete confirmation dialog for hovered card or selected cards
+  // - a: archive hovered card or selected cards
+  // - Space: toggle select hovered card
+  // - c: copy/duplicate hovered card
+  // - Enter: open hovered card
+  // - Escape: clear selection
   React.useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // If a confirmation dialog is active, let it handle its own keys
+      if (deleteConfirmation) return;
+
       const activeEl = document.activeElement;
       const isEditingText =
         activeEl &&
@@ -150,14 +181,86 @@ const Board = () => {
 
       if (isEditingText) return;
 
-      if (e.key === 'Escape') {
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      const keyLower = e.key.toLowerCase();
+
+      // Ctrl + d / Cmd + d: directly delete without confirmation
+      if (isCtrlOrCmd && keyLower === 'd') {
+        e.preventDefault();
         if (selectedCardIds.length > 0) {
+          deleteActiveCards(selectedCardIds);
           clearSelectedCards();
+        } else if (hoveredCardInfo) {
+          deleteActiveCard(hoveredCardInfo.card.id);
         }
-      } else if ((e.key === 'a' || e.key === 'A') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        return;
+      }
+
+      // d (without Ctrl): open delete confirmation dialog
+      if (!isCtrlOrCmd && !e.altKey && keyLower === 'd') {
+        if (selectedCardIds.length > 0) {
+          e.preventDefault();
+          const selectedCards = lists
+            .flatMap((l) => l.cards)
+            .filter((c) => selectedCardIds.includes(c.id));
+          setDeleteConfirmation({
+            cards: selectedCards,
+            message: `Are you sure you want to permanently delete ${selectedCardIds.length} selected card(s)?`,
+          });
+        } else if (hoveredCardInfo) {
+          e.preventDefault();
+          setDeleteConfirmation({
+            cards: [hoveredCardInfo.card],
+            message: `Are you sure you want to permanently delete "${hoveredCardInfo.card.title || 'Untitled Card'}"?`,
+          });
+        }
+        return;
+      }
+
+      // a: archive
+      if (!isCtrlOrCmd && !e.altKey && keyLower === 'a') {
         if (selectedCardIds.length > 0) {
           e.preventDefault();
           archiveCards(selectedCardIds);
+          clearSelectedCards();
+        } else if (hoveredCardInfo) {
+          e.preventDefault();
+          archiveCards([hoveredCardInfo.card.id]);
+        }
+        return;
+      }
+
+      // Space: toggle selection
+      if (!isCtrlOrCmd && !e.altKey && e.key === ' ') {
+        if (hoveredCardInfo) {
+          e.preventDefault();
+          toggleSelectCard(hoveredCardInfo.card.id);
+        }
+        return;
+      }
+
+      // c: copy/duplicate
+      if (!isCtrlOrCmd && !e.altKey && keyLower === 'c') {
+        if (hoveredCardInfo) {
+          e.preventDefault();
+          copyCard(hoveredCardInfo.card);
+        }
+        return;
+      }
+
+      // Enter: open card
+      if (!isCtrlOrCmd && !e.altKey && e.key === 'Enter') {
+        if (hoveredCardInfo) {
+          e.preventDefault();
+          navigate(`/list/${hoveredCardInfo.listId}/card/${hoveredCardInfo.card.id}`);
+        }
+        return;
+      }
+
+      // Escape: clear selection
+      if (e.key === 'Escape') {
+        if (selectedCardIds.length > 0) {
+          clearSelectedCards();
         }
       }
     };
@@ -166,10 +269,19 @@ const Board = () => {
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown);
     };
-  }, [selectedCardIds, clearSelectedCards, archiveCards]);
-
-  // During drag use local state for rendering; otherwise use store state
-  const lists = localLists ?? storeLists;
+  }, [
+    deleteConfirmation,
+    selectedCardIds,
+    hoveredCardInfo,
+    lists,
+    clearSelectedCards,
+    archiveCards,
+    deleteActiveCard,
+    deleteActiveCards,
+    copyCard,
+    toggleSelectCard,
+    navigate,
+  ]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const listIds = React.useMemo(() => lists.map((l) => l.id), [lists]);
@@ -397,9 +509,24 @@ const Board = () => {
           <BatchButton
             onClick={() => {
               archiveCards(selectedCardIds);
+              clearSelectedCards();
             }}
           >
             Archive (a)
+          </BatchButton>
+          <BatchButton
+            $variant="danger"
+            onClick={() => {
+              const selectedCards = lists
+                .flatMap((l) => l.cards)
+                .filter((c) => selectedCardIds.includes(c.id));
+              setDeleteConfirmation({
+                cards: selectedCards,
+                message: `Are you sure you want to permanently delete ${selectedCardIds.length} selected card(s)?`,
+              });
+            }}
+          >
+            Delete (d / Ctrl+d)
           </BatchButton>
           <BatchButton
             $variant="secondary"
@@ -410,6 +537,21 @@ const Board = () => {
             Cancel (Esc)
           </BatchButton>
         </BatchActionBar>
+      )}
+      {deleteConfirmation && (
+        <ConfirmDialog
+          title="Delete Card"
+          message={deleteConfirmation.message}
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={() => {
+            const cardIds = deleteConfirmation.cards.map((c) => c.id);
+            deleteActiveCards(cardIds);
+            clearSelectedCards();
+            setDeleteConfirmation(null);
+          }}
+          onCancel={() => setDeleteConfirmation(null)}
+        />
       )}
     </Container>
   ) : (

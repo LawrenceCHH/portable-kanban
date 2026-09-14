@@ -172,6 +172,7 @@ export const Card = ({
   const setAddCard = actions.useSetAddingCard();
   const selectedCards = selectors.useSelectedCardIds();
   const toggleSelectCard = actions.useToggleSelectCard();
+  const setHoveredCard = actions.useSetHoveredCard();
   const isCardSelected = isSelected ?? selectedCards.includes(card.id);
   const [isComposing, setIsComposing] = React.useState(false);
   const [state, setState] = React.useState<{
@@ -257,6 +258,12 @@ export const Card = ({
     <Container
       tabIndex={0}
       $selected={isCardSelected}
+      onMouseEnter={() => {
+        setHoveredCard({ card: state.card, listId: state.card.listId });
+      }}
+      onMouseLeave={() => {
+        setHoveredCard((curr) => (curr?.card.id === state.card.id ? null : curr));
+      }}
       onClick={(e: React.MouseEvent<HTMLDivElement>) => {
         // Prevent click from bubbling up when in edit mode
         if (state.isEdit) {
