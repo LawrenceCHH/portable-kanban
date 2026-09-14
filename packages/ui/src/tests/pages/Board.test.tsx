@@ -166,4 +166,24 @@ describe('Board', () => {
     // Card should now be deleted
     expect(screen.queryByText('Card To Confirm Delete')).not.toBeInTheDocument();
   });
+
+  it('shows exactly one confirmation dialog and keeps the card when cancelled', async () => {
+    const card = createCard({ id: 'c1', listId: 'l1', title: 'Card To Keep' });
+    const list = createList({ id: 'l1', title: 'Tasks', cards: [card] });
+    const kanban = createKanban({ lists: [list] });
+    renderBoard(kanban);
+
+    const cardEl = await screen.findByText('Card To Keep');
+    const cardContainer = cardEl.closest('[tabindex="0"]')!;
+    fireEvent.mouseEnter(cardContainer);
+
+    fireEvent.keyDown(window, { key: 'd' });
+
+    expect(screen.getAllByText('Delete Card')).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByText('Delete Card')).not.toBeInTheDocument();
+    expect(screen.getByText('Card To Keep')).toBeInTheDocument();
+  });
 });
