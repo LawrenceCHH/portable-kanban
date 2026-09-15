@@ -5,6 +5,7 @@ import { styled } from 'styled-components';
 import { getBackend } from '../backend';
 import LogoImage from '../assets/icon.svg?url';
 import { actions, selectors } from '../store';
+import { ShortcutsHelp } from './ShortcutsHelp';
 import { IconButton } from './shared/IconButton';
 import { Input } from './shared/Input';
 import { Menu } from './shared/Menu';
@@ -157,6 +158,9 @@ export const Header = ({ title }: Props) => {
             },
           ]}
         />
+      </div>
+      <div style={{ padding: '2px', paddingRight: '16px' }}>
+        <ShortcutsHelp />
       </div>
     </Container>
   );

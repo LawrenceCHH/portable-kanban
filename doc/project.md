@@ -99,6 +99,16 @@
 
 ## 3. 版本歷史更新紀錄 (Release History / Changelog)
 
+### v0.2.13 (2026-09-15)
+- **新功能：新增 `c` / `l` 快捷鍵直接開啟封存清單，並支援 hover**
+  - `Board.tsx` 全域快捷鍵新增：未 hover 任何卡片時按下 `c` 會直接開啟「Archived Cards」；按下 `l`（不論是否 hover 卡片）會直接開啟「Archived List」。皆會帶上 `backgroundLocation`，維持看板背景可見的既有覆蓋層機制。
+  - 既有的 `c`（hover 卡片時複製該卡片）行為完全保留、優先順序不變：只有在**沒有 hover 任何卡片**時，`c` 才會改為開啟 Archived Cards，因此不會與既有複製卡片快捷鍵衝突。
+  - 新增 `Board.test.tsx` 回歸測試：驗證未 hover 時按 `c`／`l` 會分別導向 Archived Cards／Archived List 頁面；hover 卡片時按 `c` 仍是複製卡片而非導向頁面。
+- **新功能：右上角新增鍵盤快捷鍵說明小圖示**
+  - 新增 `ShortcutsHelp.tsx`，在 `Header.tsx` 最右側（既有封存選單圖示的右邊）新增一個鍵盤圖示（`MdKeyboard`），點擊後於右上角彈出面板，依「Board（hover/已選取卡片）」「Board（未 hover 任意處）」「Card view」「Archived cards」四個情境列出目前所有已實作的快捷鍵與說明（包含這次新增的 `c` 開啟 Archived Cards、`l` 開啟 Archived List，以及先前版本新增的 `r` 還原）。
+  - 沿用既有 `Menu.tsx` 使用的 `menuAtom`（`selectors.useMenu()` / `actions.useSetMenu()`）機制，因此點擊看板空白處或開啟其他選單時會自動收合，行為與既有封存選單一致。
+  - 新增 `ShortcutsHelp.test.tsx` 驗證：面板預設不顯示，點擊圖示後才出現，且內容包含新快捷鍵說明。
+
 ### v0.2.12 (2026-09-15)
 - **新功能：封存卡片新增 `r` 快捷鍵還原，支援 hover**
   - 比照既有的 `a`（封存）／`d`（刪除確認）／`Ctrl+d`（直接刪除）快捷鍵模式，在「封存卡片 (Archive Cards)」清單頁面 hover 一張卡片後按下 `r`，會直接呼叫 `restoreCard()` 將該卡片還原（無需確認對話框，行為對齊清單上原本就有的「Restore」點擊按鈕）。

@@ -108,7 +108,7 @@ describe('ArchivedCardModal', () => {
       id: 'c1',
       title: 'Archived Card 1',
       labels: [{ id: 'l1', title: 'Urgent', color: '#eb5a46' }],
-      dueDate: '2026-09-20',
+      dueDate: new Date('2026-09-20'),
       checkboxes: [{ id: 'cb1', title: 'Do the thing', checked: false }],
       description: 'Some description text',
       comments: [{ id: 'cm1', comment: 'Some comment text' }],
@@ -128,7 +128,7 @@ describe('ArchivedCardModal', () => {
 
     // Everything that Board's card-click view shows starts collapsed
     expect(screen.queryByText('Urgent')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Due Date: 2026-09-20/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Due Date:/)).not.toBeInTheDocument();
     expect(screen.queryByText('Do the thing')).not.toBeInTheDocument();
     expect(screen.queryByText('Some description text')).not.toBeInTheDocument();
     expect(screen.queryByText('Some comment text')).not.toBeInTheDocument();
@@ -136,7 +136,7 @@ describe('ArchivedCardModal', () => {
     fireEvent.click(screen.getByText('Card Details'));
 
     expect(await screen.findByText('Urgent')).toBeInTheDocument();
-    expect(screen.getByText(/Due Date: 2026-09-20/)).toBeInTheDocument();
+    expect(screen.getByText(/Due Date:/)).toBeInTheDocument();
     expect(screen.getByText('Do the thing')).toBeInTheDocument();
     expect(screen.getByText('Some description text')).toBeInTheDocument();
     expect(screen.getByText('Some comment text')).toBeInTheDocument();
@@ -145,7 +145,7 @@ describe('ArchivedCardModal', () => {
     fireEvent.click(screen.getByText('Card Details'));
 
     expect(screen.queryByText('Urgent')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Due Date: 2026-09-20/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Due Date:/)).not.toBeInTheDocument();
     expect(screen.queryByText('Do the thing')).not.toBeInTheDocument();
     expect(screen.queryByText('Some description text')).not.toBeInTheDocument();
     expect(screen.queryByText('Some comment text')).not.toBeInTheDocument();

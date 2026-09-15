@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'jotai';
 import { describe, expect, it } from 'vitest';
+import { Route, Routes } from 'react-router-dom';
 import { Board } from '../../pages/Board';
 import { actions } from '../../store';
 import { TestWrapper, createCard, createKanban, createList } from '../helpers';
@@ -185,5 +186,77 @@ describe('Board', () => {
 
     expect(screen.queryByText('Delete Card')).not.toBeInTheDocument();
     expect(screen.getByText('Card To Keep')).toBeInTheDocument();
+  });
+
+  it('opens Archived Cards on "c" when no card is hovered', async () => {
+    const kanban = createKanban();
+
+    render(
+      <Provider>
+        <TestWrapper>
+          <KanbanInitializer kanban={kanban} title="My Board">
+            <Routes>
+              <Route path="/" element={<Board />} />
+              <Route path="/archive/cards" element={<div>Archive Cards Page</div>} />
+            </Routes>
+          </KanbanInitializer>
+        </TestWrapper>
+      </Provider>,
+    );
+
+    await screen.findByText('My Board');
+    fireEvent.keyDown(window, { key: 'c' });
+
+    expect(await screen.findByText('Archive Cards Page')).toBeInTheDocument();
+  });
+
+  it('duplicates the hovered card on "c" instead of opening Archived Cards', async () => {
+    const card = createCard({ id: 'c1', listId: 'l1', title: 'Card To Duplicate' });
+    const list = createList({ id: 'l1', title: 'Tasks', cards: [card] });
+    const kanban = createKanban({ lists: [list] });
+
+    render(
+      <Provider>
+        <TestWrapper>
+          <KanbanInitializer kanban={kanban} title="My Board">
+            <Routes>
+              <Route path="/" element={<Board />} />
+              <Route path="/archive/cards" element={<div>Archive Cards Page</div>} />
+            </Routes>
+          </KanbanInitializer>
+        </TestWrapper>
+      </Provider>,
+    );
+
+    const cardEl = await screen.findByText('Card To Duplicate');
+    const cardContainer = cardEl.closest('[tabindex="0"]')!;
+    fireEvent.mouseEnter(cardContainer);
+
+    fireEvent.keyDown(window, { key: 'c' });
+
+    expect(screen.queryByText('Archive Cards Page')).not.toBeInTheDocument();
+    expect(await screen.findAllByText('Card To Duplicate')).toHaveLength(2);
+  });
+
+  it('opens Archived List on "l"', async () => {
+    const kanban = createKanban();
+
+    render(
+      <Provider>
+        <TestWrapper>
+          <KanbanInitializer kanban={kanban} title="My Board">
+            <Routes>
+              <Route path="/" element={<Board />} />
+              <Route path="/archive/lists" element={<div>Archive List Page</div>} />
+            </Routes>
+          </KanbanInitializer>
+        </TestWrapper>
+      </Provider>,
+    );
+
+    await screen.findByText('My Board');
+    fireEvent.keyDown(window, { key: 'l' });
+
+    expect(await screen.findByText('Archive List Page')).toBeInTheDocument();
   });
 });

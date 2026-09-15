@@ -15,7 +15,7 @@ import { CSS } from '@dnd-kit/utilities';
 import * as React from 'react';
 import { ScrollContainer } from 'react-indiana-drag-scroll';
 import { styled } from 'styled-components';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Header } from '../components/Header';
 import { List } from '../components/List';
@@ -143,6 +143,7 @@ const Board = ({ isBackground = false }: Properties) => {
   const archiveCards = kanbanActions.useArchiveCards();
 
   const navigate = useNavigate();
+  const location = useLocation();
   const hoveredCardInfo = selectors.useHoveredCard();
   const deleteActiveCard = kanbanActions.useDeleteActiveCard();
   const deleteActiveCards = kanbanActions.useDeleteActiveCards();
@@ -174,7 +175,8 @@ const Board = ({ isBackground = false }: Properties) => {
   // - d: show delete confirmation dialog for hovered card or selected cards
   // - a: archive hovered card or selected cards
   // - Space: toggle select hovered card
-  // - c: copy/duplicate hovered card
+  // - c: copy/duplicate hovered card, or open Archived Cards when no card is hovered
+  // - l: open Archived List
   // - Enter: open hovered card
   // - Escape: clear selection
   React.useEffect(() => {
@@ -253,12 +255,21 @@ const Board = ({ isBackground = false }: Properties) => {
         return;
       }
 
-      // c: copy/duplicate
+      // c: copy/duplicate hovered card, or open Archived Cards when nothing is hovered
       if (!isCtrlOrCmd && !e.altKey && keyLower === 'c') {
+        e.preventDefault();
         if (hoveredCardInfo) {
-          e.preventDefault();
           copyCard(hoveredCardInfo.card);
+        } else {
+          navigate('/archive/cards', { state: { backgroundLocation: location } });
         }
+        return;
+      }
+
+      // l: open Archived List
+      if (!isCtrlOrCmd && !e.altKey && keyLower === 'l') {
+        e.preventDefault();
+        navigate('/archive/lists', { state: { backgroundLocation: location } });
         return;
       }
 
@@ -295,6 +306,7 @@ const Board = ({ isBackground = false }: Properties) => {
     copyCard,
     toggleSelectCard,
     navigate,
+    location,
     isBackground,
   ]);
 
