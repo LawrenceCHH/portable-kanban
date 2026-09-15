@@ -99,6 +99,12 @@
 
 ## 3. 版本歷史更新紀錄 (Release History / Changelog)
 
+### v0.2.14 (2026-09-15)
+- **修復：`l`（開啟 Archived List）無法用 `Esc` 關閉回到看板**
+  - 根本原因：`ArchiveLists.tsx` 從一開始就沒有掛任何鍵盤監聽器，僅靠點擊覆蓋層空白處（`Overlay` 的 `onClick`）才會 `navigate('/')`；相對地 `ArchiveCards.tsx` 一直都有 `Escape` 監聽器。因此透過 `c` 開啟的「Archived Cards」可以按 `Esc` 關閉，透過 `l` 開啟的「Archived List」卻不行，行為不一致。
+  - 修復方式：為 `ArchiveLists.tsx` 補上與 `ArchiveCards.tsx` 相同的 `Escape` 鍵盤監聽器（`navigate('/')`），使兩個封存頁面的關閉行為一致。
+  - 新增 `ArchiveLists.test.tsx`（先前完全沒有測試檔案），驗證清單正確渲染，以及按 `Esc` 會關閉頁面並返回看板。
+
 ### v0.2.13 (2026-09-15)
 - **新功能：新增 `c` / `l` 快捷鍵直接開啟封存清單，並支援 hover**
   - `Board.tsx` 全域快捷鍵新增：未 hover 任何卡片時按下 `c` 會直接開啟「Archived Cards」；按下 `l`（不論是否 hover 卡片）會直接開啟「Archived List」。皆會帶上 `backgroundLocation`，維持看板背景可見的既有覆蓋層機制。

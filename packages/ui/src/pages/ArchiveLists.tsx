@@ -48,6 +48,17 @@ export const ArchiveLists = ({ lists }: Properties) => {
   const removeList = kanbanActions.useRemoveList();
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        navigate('/');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
+
   return (
     <Overlay
       onClick={() => {
