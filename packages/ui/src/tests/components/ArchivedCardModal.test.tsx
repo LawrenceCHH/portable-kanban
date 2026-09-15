@@ -103,11 +103,12 @@ describe('ArchivedCardModal', () => {
     expect(screen.queryByText('Delete Archived Card')).not.toBeInTheDocument();
   });
 
-  it('hides the card details behind a collapsible toggle until clicked', async () => {
+  it('hides description and comments behind a collapsible toggle until clicked', async () => {
     const card = createCard({
       id: 'c1',
       title: 'Archived Card 1',
       description: 'Some description text',
+      comments: [{ id: 'cm1', comment: 'Some comment text' }],
     });
     const onClose = vi.fn();
     const onRestore = vi.fn();
@@ -122,16 +123,46 @@ describe('ArchivedCardModal', () => {
       />,
     );
 
-    // Description is part of the card content and starts collapsed
+    // Description and comments start collapsed
     expect(screen.queryByText('Some description text')).not.toBeInTheDocument();
+    expect(screen.queryByText('Some comment text')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Card Details'));
+    fireEvent.click(screen.getByText('Description & Comments'));
 
     expect(await screen.findByText('Some description text')).toBeInTheDocument();
+    expect(screen.getByText('Some comment text')).toBeInTheDocument();
 
-    // Clicking again collapses it back
-    fireEvent.click(screen.getByText('Card Details'));
+    // Clicking again collapses them back
+    fireEvent.click(screen.getByText('Description & Comments'));
 
     expect(screen.queryByText('Some description text')).not.toBeInTheDocument();
+    expect(screen.queryByText('Some comment text')).not.toBeInTheDocument();
+  });
+
+  it('shows labels, due date, tasks, and activity history directly without needing the toggle', () => {
+    const card = createCard({
+      id: 'c1',
+      title: 'Archived Card 1',
+      labels: [{ id: 'l1', title: 'Urgent', color: '#eb5a46' }],
+      dueDate: '2026-09-20',
+      checkboxes: [{ id: 'cb1', title: 'Do the thing', checked: false }],
+    });
+    const onClose = vi.fn();
+    const onRestore = vi.fn();
+    const onDelete = vi.fn();
+
+    render(
+      <ArchivedCardModal
+        card={card}
+        onClose={onClose}
+        onRestore={onRestore}
+        onDelete={onDelete}
+      />,
+    );
+
+    expect(screen.getByText('Urgent')).toBeInTheDocument();
+    expect(screen.getByText(/Due Date: 2026-09-20/)).toBeInTheDocument();
+    expect(screen.getByText('Do the thing')).toBeInTheDocument();
+    expect(screen.getByText('Activity History (Lifecycle Audit Log)')).toBeInTheDocument();
   });
 });

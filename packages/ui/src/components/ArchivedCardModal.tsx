@@ -321,19 +321,7 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
           </SnapshotItem>
         </SnapshotBanner>
 
-        {/* Collapsible toggle: expands downward to reveal the full card content below */}
-        <DetailsToggle
-          onClick={() => setDetailsExpanded((v) => !v)}
-          role="button"
-          aria-expanded={detailsExpanded}
-        >
-          <span>Card Details</span>
-          {detailsExpanded ? <MdExpandMore /> : <MdChevronRight />}
-        </DetailsToggle>
-
-        {detailsExpanded && (
-          <>
-        {/* Labels */}
+        {/* Labels - always shown directly, short and predictable in length */}
         {card.labels.length > 0 && (
           <LabelsContainer>
             {card.labels.map((l) => (
@@ -344,7 +332,7 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
           </LabelsContainer>
         )}
 
-        {/* Due Date */}
+        {/* Due Date - always shown directly */}
         {card.dueDate && (
           <Section>
             <SectionTitle>
@@ -354,18 +342,7 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
           </Section>
         )}
 
-        {/* Description */}
-        {card.description && (
-          <Section>
-            <SectionTitle>
-              <MdOutlineDescription />
-              <span>Description</span>
-            </SectionTitle>
-            <DescriptionBox>{card.description}</DescriptionBox>
-          </Section>
-        )}
-
-        {/* Tasks */}
+        {/* Tasks - always shown directly */}
         {card.checkboxes.length > 0 && (
           <Section>
             <SectionTitle>
@@ -385,22 +362,52 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
           </Section>
         )}
 
-        {/* Comments */}
-        {card.comments.length > 0 && (
-          <Section>
-            <SectionTitle>
-              <MdComment />
-              <span>Comments ({card.comments.length})</span>
-            </SectionTitle>
-            <CommentsList>
-              {card.comments.map((c) => (
-                <CommentItem key={c.id}>{c.comment}</CommentItem>
-              ))}
-            </CommentsList>
-          </Section>
+        {/*
+          Only description + comments collapse behind a toggle, since those are the
+          fields most likely to run long. The toggle sits directly above the always-visible
+          history below, so its position stays fixed: content above (expand if needed),
+          history below.
+        */}
+        <DetailsToggle
+          onClick={() => setDetailsExpanded((v) => !v)}
+          role="button"
+          aria-expanded={detailsExpanded}
+        >
+          <span>Description &amp; Comments</span>
+          {detailsExpanded ? <MdExpandMore /> : <MdChevronRight />}
+        </DetailsToggle>
+
+        {detailsExpanded && (
+          <>
+            {/* Description */}
+            {card.description && (
+              <Section>
+                <SectionTitle>
+                  <MdOutlineDescription />
+                  <span>Description</span>
+                </SectionTitle>
+                <DescriptionBox>{card.description}</DescriptionBox>
+              </Section>
+            )}
+
+            {/* Comments */}
+            {card.comments.length > 0 && (
+              <Section>
+                <SectionTitle>
+                  <MdComment />
+                  <span>Comments ({card.comments.length})</span>
+                </SectionTitle>
+                <CommentsList>
+                  {card.comments.map((c) => (
+                    <CommentItem key={c.id}>{c.comment}</CommentItem>
+                  ))}
+                </CommentsList>
+              </Section>
+            )}
+          </>
         )}
 
-        {/* Activity Timeline / Audit Log */}
+        {/* Activity Timeline / Audit Log - always shown directly below the toggle */}
         <Section>
           <SectionTitle>
             <MdAccessTime />
@@ -448,8 +455,6 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
             </div>
           )}
         </Section>
-          </>
-        )}
 
         {/* Action Row: Restore / Delete / Close */}
         <ActionRow>
