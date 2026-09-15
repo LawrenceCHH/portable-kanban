@@ -121,6 +121,56 @@ describe('ArchiveCards page', () => {
     expect(container.querySelector('[data-uid="card-1-uid"]')).toBeNull();
   });
 
+  it('restores the hovered card when pressing "r"', async () => {
+    const card1 = createCard({
+      id: 'c1',
+      uid: 'card-1-uid',
+      title: 'Card One',
+      listId: 'list-1',
+      archivedFromList: { id: 'list-1', title: 'Backlog' },
+    });
+    const card2 = createCard({
+      id: 'c2',
+      uid: 'card-2-uid',
+      title: 'Card Two',
+      listId: 'list-1',
+      archivedFromList: { id: 'list-1', title: 'Backlog' },
+    });
+
+    const ArchiveCardsFromStore = () => {
+      const setKanban = actions.useSetKanban();
+      const archiveCards = selectors.useArchiveCards();
+      React.useEffect(() => {
+        setKanban(
+          createKanban({
+            lists: [{ id: 'list-1', title: 'Backlog', cards: [] }],
+            archive: { lists: [], cards: [card1, card2] },
+          }),
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+      return <ArchiveCards cards={archiveCards} />;
+    };
+
+    render(
+      <Provider>
+        <TestWrapper>
+          <ArchiveCardsFromStore />
+        </TestWrapper>
+      </Provider>,
+    );
+
+    const cardOneTitle = await screen.findByText('Card One');
+    const cardOneContainer = cardOneTitle.closest('[tabindex="0"]');
+    expect(cardOneContainer).not.toBeNull();
+
+    fireEvent.mouseEnter(cardOneContainer!);
+    fireEvent.keyDown(window, { key: 'r' });
+
+    expect(screen.queryByText('Card One')).not.toBeInTheDocument();
+    expect(screen.getByText('Card Two')).toBeInTheDocument();
+  });
+
   it('renders empty state when no cards are archived', async () => {
     render(
       <Provider>

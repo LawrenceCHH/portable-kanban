@@ -283,6 +283,14 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
         return;
       }
 
+      // r: restore the card
+      if (!isCtrlOrCmd && !e.altKey && keyLower === 'r') {
+        e.preventDefault();
+        onRestore(card);
+        onClose();
+        return;
+      }
+
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
@@ -290,7 +298,7 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [card, onClose, onDelete, showConfirmDelete]);
+  }, [card, onClose, onDelete, onRestore, showConfirmDelete]);
 
   const archivedBlockTitle = card.archivedFromList?.title ?? 'Unknown Block';
   const archivedDate = formatIso(card.archivedAt);
@@ -321,64 +329,64 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
           </SnapshotItem>
         </SnapshotBanner>
 
-        {/* Labels - always shown directly, short and predictable in length */}
-        {card.labels.length > 0 && (
-          <LabelsContainer>
-            {card.labels.map((l) => (
-              <LabelBadge key={l.id} $color={l.color}>
-                {l.title}
-              </LabelBadge>
-            ))}
-          </LabelsContainer>
-        )}
-
-        {/* Due Date - always shown directly */}
-        {card.dueDate && (
-          <Section>
-            <SectionTitle>
-              <MdDateRange />
-              <span>Due Date: {typeof card.dueDate === 'string' ? card.dueDate : card.dueDate.toDateString()}</span>
-            </SectionTitle>
-          </Section>
-        )}
-
-        {/* Tasks - always shown directly */}
-        {card.checkboxes.length > 0 && (
-          <Section>
-            <SectionTitle>
-              <MdCheck />
-              <span>
-                Task List ({card.checkboxes.filter((c) => c.checked).length}/{card.checkboxes.length})
-              </span>
-            </SectionTitle>
-            <CheckboxList>
-              {card.checkboxes.map((c) => (
-                <CheckboxItem key={c.id} $checked={c.checked}>
-                  <input type="checkbox" checked={c.checked} readOnly />
-                  <span>{c.title}</span>
-                </CheckboxItem>
-              ))}
-            </CheckboxList>
-          </Section>
-        )}
-
         {/*
-          Only description + comments collapse behind a toggle, since those are the
-          fields most likely to run long. The toggle sits directly above the always-visible
-          history below, so its position stays fixed: content above (expand if needed),
-          history below.
+          Every field that Board's card-click view (EditCard) shows - labels, due date,
+          task list, description, comments - collapses behind this single toggle, so the
+          archive list stays quick to skim. Only Activity History (below) is specific to
+          the archive view and stays always visible, in a fixed spot right after the toggle.
         */}
         <DetailsToggle
           onClick={() => setDetailsExpanded((v) => !v)}
           role="button"
           aria-expanded={detailsExpanded}
         >
-          <span>Description &amp; Comments</span>
+          <span>Card Details</span>
           {detailsExpanded ? <MdExpandMore /> : <MdChevronRight />}
         </DetailsToggle>
 
         {detailsExpanded && (
           <>
+            {/* Labels */}
+            {card.labels.length > 0 && (
+              <LabelsContainer>
+                {card.labels.map((l) => (
+                  <LabelBadge key={l.id} $color={l.color}>
+                    {l.title}
+                  </LabelBadge>
+                ))}
+              </LabelsContainer>
+            )}
+
+            {/* Due Date */}
+            {card.dueDate && (
+              <Section>
+                <SectionTitle>
+                  <MdDateRange />
+                  <span>Due Date: {typeof card.dueDate === 'string' ? card.dueDate : card.dueDate.toDateString()}</span>
+                </SectionTitle>
+              </Section>
+            )}
+
+            {/* Tasks */}
+            {card.checkboxes.length > 0 && (
+              <Section>
+                <SectionTitle>
+                  <MdCheck />
+                  <span>
+                    Task List ({card.checkboxes.filter((c) => c.checked).length}/{card.checkboxes.length})
+                  </span>
+                </SectionTitle>
+                <CheckboxList>
+                  {card.checkboxes.map((c) => (
+                    <CheckboxItem key={c.id} $checked={c.checked}>
+                      <input type="checkbox" checked={c.checked} readOnly />
+                      <span>{c.title}</span>
+                    </CheckboxItem>
+                  ))}
+                </CheckboxList>
+              </Section>
+            )}
+
             {/* Description */}
             {card.description && (
               <Section>

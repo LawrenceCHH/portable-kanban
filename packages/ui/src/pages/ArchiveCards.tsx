@@ -102,6 +102,15 @@ export const ArchiveCards = ({ cards }: Properties) => {
         return;
       }
 
+      // r: restore hovered archived card
+      if (!isCtrlOrCmd && !e.altKey && keyLower === 'r') {
+        if (hoveredCardInfo) {
+          e.preventDefault();
+          restoreCard(hoveredCardInfo.card);
+        }
+        return;
+      }
+
       if (e.key === 'Escape') {
         navigate('/');
       }
@@ -109,7 +118,7 @@ export const ArchiveCards = ({ cards }: Properties) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedArchivedCard, cardToDelete, hoveredCardInfo, deleteCard, navigate]);
+  }, [selectedArchivedCard, cardToDelete, hoveredCardInfo, deleteCard, restoreCard, navigate]);
 
   return (
     <>

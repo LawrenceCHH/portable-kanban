@@ -103,10 +103,13 @@ describe('ArchivedCardModal', () => {
     expect(screen.queryByText('Delete Archived Card')).not.toBeInTheDocument();
   });
 
-  it('hides description and comments behind a collapsible toggle until clicked', async () => {
+  it('hides labels, due date, tasks, description, and comments behind a single "Card Details" toggle until clicked', async () => {
     const card = createCard({
       id: 'c1',
       title: 'Archived Card 1',
+      labels: [{ id: 'l1', title: 'Urgent', color: '#eb5a46' }],
+      dueDate: '2026-09-20',
+      checkboxes: [{ id: 'cb1', title: 'Do the thing', checked: false }],
       description: 'Some description text',
       comments: [{ id: 'cm1', comment: 'Some comment text' }],
     });
@@ -123,29 +126,35 @@ describe('ArchivedCardModal', () => {
       />,
     );
 
-    // Description and comments start collapsed
+    // Everything that Board's card-click view shows starts collapsed
+    expect(screen.queryByText('Urgent')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Due Date: 2026-09-20/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Do the thing')).not.toBeInTheDocument();
     expect(screen.queryByText('Some description text')).not.toBeInTheDocument();
     expect(screen.queryByText('Some comment text')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Description & Comments'));
+    fireEvent.click(screen.getByText('Card Details'));
 
-    expect(await screen.findByText('Some description text')).toBeInTheDocument();
+    expect(await screen.findByText('Urgent')).toBeInTheDocument();
+    expect(screen.getByText(/Due Date: 2026-09-20/)).toBeInTheDocument();
+    expect(screen.getByText('Do the thing')).toBeInTheDocument();
+    expect(screen.getByText('Some description text')).toBeInTheDocument();
     expect(screen.getByText('Some comment text')).toBeInTheDocument();
 
-    // Clicking again collapses them back
-    fireEvent.click(screen.getByText('Description & Comments'));
+    // Clicking again collapses everything back
+    fireEvent.click(screen.getByText('Card Details'));
 
+    expect(screen.queryByText('Urgent')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Due Date: 2026-09-20/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Do the thing')).not.toBeInTheDocument();
     expect(screen.queryByText('Some description text')).not.toBeInTheDocument();
     expect(screen.queryByText('Some comment text')).not.toBeInTheDocument();
   });
 
-  it('shows labels, due date, tasks, and activity history directly without needing the toggle', () => {
+  it('shows activity history directly without needing the toggle', () => {
     const card = createCard({
       id: 'c1',
       title: 'Archived Card 1',
-      labels: [{ id: 'l1', title: 'Urgent', color: '#eb5a46' }],
-      dueDate: '2026-09-20',
-      checkboxes: [{ id: 'cb1', title: 'Do the thing', checked: false }],
     });
     const onClose = vi.fn();
     const onRestore = vi.fn();
@@ -160,9 +169,30 @@ describe('ArchivedCardModal', () => {
       />,
     );
 
-    expect(screen.getByText('Urgent')).toBeInTheDocument();
-    expect(screen.getByText(/Due Date: 2026-09-20/)).toBeInTheDocument();
-    expect(screen.getByText('Do the thing')).toBeInTheDocument();
     expect(screen.getByText('Activity History (Lifecycle Audit Log)')).toBeInTheDocument();
+  });
+
+  it('restores and closes when pressing "r"', () => {
+    const card = createCard({
+      id: 'c1',
+      title: 'Archived Card 1',
+    });
+    const onClose = vi.fn();
+    const onRestore = vi.fn();
+    const onDelete = vi.fn();
+
+    render(
+      <ArchivedCardModal
+        card={card}
+        onClose={onClose}
+        onRestore={onRestore}
+        onDelete={onDelete}
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: 'r' });
+
+    expect(onRestore).toHaveBeenCalledWith(card);
+    expect(onClose).toHaveBeenCalled();
   });
 });
