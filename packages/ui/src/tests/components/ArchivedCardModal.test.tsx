@@ -102,4 +102,36 @@ describe('ArchivedCardModal', () => {
     expect(onClose).toHaveBeenCalled();
     expect(screen.queryByText('Delete Archived Card')).not.toBeInTheDocument();
   });
+
+  it('hides the card details behind a collapsible toggle until clicked', async () => {
+    const card = createCard({
+      id: 'c1',
+      title: 'Archived Card 1',
+      description: 'Some description text',
+    });
+    const onClose = vi.fn();
+    const onRestore = vi.fn();
+    const onDelete = vi.fn();
+
+    render(
+      <ArchivedCardModal
+        card={card}
+        onClose={onClose}
+        onRestore={onRestore}
+        onDelete={onDelete}
+      />,
+    );
+
+    // Description is part of the card content and starts collapsed
+    expect(screen.queryByText('Some description text')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Card Details'));
+
+    expect(await screen.findByText('Some description text')).toBeInTheDocument();
+
+    // Clicking again collapses it back
+    fireEvent.click(screen.getByText('Card Details'));
+
+    expect(screen.queryByText('Some description text')).not.toBeInTheDocument();
+  });
 });

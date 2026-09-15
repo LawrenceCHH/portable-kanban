@@ -13,7 +13,7 @@ import {
   MdRestore,
   MdSubtitles,
 } from 'react-icons/md';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { styled } from 'styled-components';
 import { Comment } from '../components/Comment';
 import { LabelList } from '../components/Label/List';
@@ -137,6 +137,7 @@ const EditCard = () => {
   const lists = selectors.useLists();
   const setShowModal = actions.useSetShowModal();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const updateCard = kanbanActions.useUpdateCard();
   const updateCardDueDate = kanbanActions.useUpdateCardDueDate();
@@ -313,8 +314,12 @@ const EditCard = () => {
     }
 
     archiveCard(list, card);
-    setArchived(true);
-  }, [list, card]);
+
+    // Close the card and jump straight to the archived cards list so the user
+    // can immediately see (and, if needed, restore) what they just archived.
+    const backgroundLocation = (location.state as { backgroundLocation?: Location })?.backgroundLocation;
+    navigate('/archive/cards', { state: { backgroundLocation: backgroundLocation ?? location } });
+  }, [list, card, location, navigate]);
 
   const handleRestoreCard = React.useCallback(() => {
     if (!list || !archivedCard) {

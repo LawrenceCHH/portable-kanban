@@ -3,10 +3,12 @@ import * as React from 'react';
 import {
   MdAccessTime,
   MdCheck,
+  MdChevronRight,
   MdClose,
   MdComment,
   MdDateRange,
   MdDeleteOutline,
+  MdExpandMore,
   MdFolder,
   MdOutlineDescription,
   MdRestore,
@@ -99,6 +101,22 @@ const SnapshotItem = styled.div`
 
 const Section = styled.div`
   margin-bottom: 20px;
+`;
+
+const DetailsToggle = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 20px;
+  background-color: var(--secondary-background-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-color);
 `;
 
 const SectionTitle = styled.div`
@@ -240,6 +258,7 @@ type Properties = {
 
 export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Properties) => {
   const [showConfirmDelete, setShowConfirmDelete] = React.useState(false);
+  const [detailsExpanded, setDetailsExpanded] = React.useState(false);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -302,6 +321,18 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
           </SnapshotItem>
         </SnapshotBanner>
 
+        {/* Collapsible toggle: expands downward to reveal the full card content below */}
+        <DetailsToggle
+          onClick={() => setDetailsExpanded((v) => !v)}
+          role="button"
+          aria-expanded={detailsExpanded}
+        >
+          <span>Card Details</span>
+          {detailsExpanded ? <MdExpandMore /> : <MdChevronRight />}
+        </DetailsToggle>
+
+        {detailsExpanded && (
+          <>
         {/* Labels */}
         {card.labels.length > 0 && (
           <LabelsContainer>
@@ -417,6 +448,8 @@ export const ArchivedCardModal = ({ card, onClose, onRestore, onDelete }: Proper
             </div>
           )}
         </Section>
+          </>
+        )}
 
         {/* Action Row: Restore / Delete / Close */}
         <ActionRow>
