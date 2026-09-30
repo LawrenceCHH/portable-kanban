@@ -2,7 +2,7 @@
 
 > 本文檔記錄 Portable Kanban 專案的功能現狀、架構設計、開發環境要求、版本歷史更新紀錄與維護指引。後續所有功能擴充與變更均於此文檔持續維護。
 
-> cd /home/lawrencehuang/projects/portable-kanban && code --install-extension versions/portable-kanban-0.2.15.vsix --force
+> 改版號、打包、安裝：`scripts/release-vsix.sh --install`（詳見 [第 7 節](#7-常用開發指令-development-commands)）
 ---
 
 ## 目錄
@@ -35,6 +35,7 @@
     - [快速初始化指令](#快速初始化指令)
   - [7. 常用開發指令 (Development Commands)](#7-常用開發指令-development-commands)
     - [擴充套件專用指令](#擴充套件專用指令)
+    - [一鍵改版號 / 打包 / 安裝 (`scripts/release-vsix.sh`)](#一鍵改版號--打包--安裝-scriptsrelease-vsixsh)
     - [全專案通用指令](#全專案通用指令)
   - [8. VS Code Extension 除錯指南 (Debugging in VS Code)](#8-vs-code-extension-除錯指南-debugging-in-vs-code)
   - [9. 維護與變更指引 (Maintenance Guide)](#9-維護與變更指引-maintenance-guide)
@@ -311,6 +312,39 @@ pnpm dev:vscode
 # 打包產出 VS Code 擴充套件 .vsix 安裝包
 pnpm --filter portable-kanban run vsce:package
 ```
+
+### 一鍵改版號 / 打包 / 安裝 (`scripts/release-vsix.sh`)
+
+腳本會（可選）更新 `apps/vscode/package.json` 的版本號，依序建置 core、ui 並打包成 `versions/portable-kanban-<版本>.vsix`，也可直接安裝到本機 VS Code。
+
+升版時，腳本會依 Conventional Commits（`feat:`／`fix:`／…）把「上一個 `v*` tag 以來」的 commit 分類寫入 `apps/vscode/CHANGELOG.md`（該檔會被打包進 vsix，VS Code 擴充套件頁面可看到 Changelog 分頁）。找不到 tag 時退而使用最近 20 筆 commit。
+
+```bash
+# 顯示原始碼版本與 VS Code 已安裝版本
+scripts/release-vsix.sh -v
+
+# 只打包，沿用目前版本號
+scripts/release-vsix.sh
+
+# 自動遞增修訂號（0.2.15 -> 0.2.16）並打包
+scripts/release-vsix.sh -i
+
+# 升版到 0.2.16 並打包
+scripts/release-vsix.sh 0.2.16
+
+# 升版、打包並安裝（安裝後在 VS Code 執行 Reload Window）
+scripts/release-vsix.sh 0.2.16 --install
+
+# 不升版，打包後直接覆蓋安裝
+scripts/release-vsix.sh --install
+
+# 自動遞增版號、打包並安裝
+scripts/release-vsix.sh -i --install
+```
+
+版本號需為 `x.y.z` 格式。
+
+**發版流程**：一般 commit 不升版；累積到值得發布的變更時，先 commit 完所有程式碼，再執行 `scripts/release-vsix.sh -i --install`，接著 commit `chore(release): vX.Y.Z`（含 package.json、CHANGELOG.md、vsix）並 `git tag vX.Y.Z`。何時發版、升 patch 或 minor 由 agent 依 commit log 判斷。v0.2.15 以前的紀錄在本文件第 3 節，之後只維護 `apps/vscode/CHANGELOG.md`。
 
 ### 全專案通用指令
 

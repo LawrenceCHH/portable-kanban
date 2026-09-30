@@ -89,3 +89,12 @@ Core data structures are defined in `src/kanban/models/kanban.ts`:
 - Extension entry point is `src/extension.ts`
 - Webview communication handled in `src/kanbanEditor.ts`
 - CSS themes located in `assets/css/` (dark.css, light.css, system.css)
+
+## Release / Versioning
+
+- Use Conventional Commits (`feat:`, `fix:`, `perf:`, `refactor:`, `docs:`...). The changelog is generated from them, so write the subject as a user-readable change.
+- Normal commits do NOT bump the version.
+- Release only when the commits since the last `v*` tag (`git log $(git describe --tags --match 'v*' --abbrev=0)..HEAD --oneline`) contain user-facing changes worth shipping - judge this yourself, and tell the user when you release.
+- To release: commit all work first, then run `scripts/release-vsix.sh -i --install` (patch bump; use an explicit version like `0.3.0` instead when there are new `feat:` commits or many accumulated changes; use `1.0.0`-style for breaking changes). It updates `apps/vscode/package.json` and `apps/vscode/CHANGELOG.md`, builds the vsix into `versions/`, and installs it.
+- Then commit `chore(release): vX.Y.Z` with those files plus the new vsix, and run `git tag vX.Y.Z`. Do not push.
+- Older history lives in `doc/project.md` section 3; new entries go only in `apps/vscode/CHANGELOG.md`.
