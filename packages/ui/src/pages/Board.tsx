@@ -452,6 +452,25 @@ const Board = ({ isBackground = false }: Properties) => {
     [storeLists, setLists, updateLocalLists],
   );
 
+  // A cancelled drag (e.g. Escape) never reaches onDragEnd; without this the stale
+  // local snapshot keeps shadowing the store and later store updates look ignored.
+  const onDragCancel = React.useCallback(() => {
+    if (dragOverRafRef.current !== null) {
+      cancelAnimationFrame(dragOverRafRef.current);
+      dragOverRafRef.current = null;
+      pendingDragOverRef.current = null;
+    }
+    setActiveDrag(null);
+    updateLocalLists(null);
+  }, [updateLocalLists]);
+
+  // Store changed outside a drag (archive, move-all, ...): drop any stale snapshot.
+  React.useEffect(() => {
+    if (!activeDrag) {
+      updateLocalLists(null);
+    }
+  }, [storeLists, activeDrag, updateLocalLists]);
+
   return kanban ? (
     <Container
       onClick={() => {

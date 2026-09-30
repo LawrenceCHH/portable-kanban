@@ -99,6 +99,11 @@
 
 ## 3. 版本歷史更新紀錄 (Release History / Changelog)
 
+### v0.2.15 (2026-09-30)
+- **修復：「Archive all cards in the list」後原欄位卡片未消失**
+  - 根本原因：`Board.tsx` 以 `localLists ?? storeLists` 顯示，`localLists` 為拖曳開始時的快照；拖曳被取消（例如按 `Esc`）時不會觸發 `onDragEnd`，且原本沒有 `onDragCancel`，快照殘留後會遮蔽後續所有 store 更新。
+  - 修復方式：新增 `onDragCancel` 清除快照；並在非拖曳狀態下 store lists 變動時清除殘留快照。
+
 ### v0.2.14 (2026-09-15)
 - **修復：`l`（開啟 Archived List）無法用 `Esc` 關閉回到看板**
   - 根本原因：`ArchiveLists.tsx` 從一開始就沒有掛任何鍵盤監聽器，僅靠點擊覆蓋層空白處（`Overlay` 的 `onClick`）才會 `navigate('/')`；相對地 `ArchiveCards.tsx` 一直都有 `Escape` 監聽器。因此透過 `c` 開啟的「Archived Cards」可以按 `Esc` 關閉，透過 `l` 開啟的「Archived List」卻不行，行為不一致。
