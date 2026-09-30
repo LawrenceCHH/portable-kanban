@@ -2,19 +2,43 @@
 
 > 本文檔記錄 Portable Kanban 專案的功能現狀、架構設計、開發環境要求、版本歷史更新紀錄與維護指引。後續所有功能擴充與變更均於此文檔持續維護。
 
+> cd /home/lawrencehuang/projects/portable-kanban && code --install-extension versions/portable-kanban-0.2.15.vsix --force
 ---
 
 ## 目錄
 
-1. [專案概覽 (Overview)](#1-專案概覽-overview)
-2. [目前功能總覽（現在專案能幹嘛）](#2-目前功能總覽現在專案能幹嘛)
-3. [版本歷史更新紀錄 (Release History / Changelog)](#3-版本歷史更新紀錄-release-history--changelog)
-4. [測試範本指引 (Sample Kanban Template)](#4-測試範本指引-sample-kanban-template)
-5. [Monorepo 架構 (Architecture)](#5-monorepo-架構-architecture)
-6. [開發環境需求與設置 (Environment Setup)](#6-開發環境需求與設置-environment-setup)
-7. [常用開發指令 (Development Commands)](#7-常用開發指令-development-commands)
-8. [VS Code Extension 除錯指南 (Debugging in VS Code)](#8-vs-code-extension-除錯指南-debugging-in-vs-code)
-9. [維護與變更指引 (Maintenance Guide)](#9-維護與變更指引-maintenance-guide)
+- [Portable Kanban 專案開發與維護手冊](#portable-kanban-專案開發與維護手冊)
+  - [目錄](#目錄)
+  - [1. 專案概覽 (Overview)](#1-專案概覽-overview)
+  - [2. 目前功能總覽（現在專案能幹嘛）](#2-目前功能總覽現在專案能幹嘛)
+    - [2.1 支援的客戶端介面](#21-支援的客戶端介面)
+    - [2.2 看板核心功能](#22-看板核心功能)
+    - [2.3 多選與快捷鍵操作 (Multi-Select \& Shortcuts)](#23-多選與快捷鍵操作-multi-select--shortcuts)
+    - [2.4 不可變 Block 快照機制 (Immutable Block Snapshot)](#24-不可變-block-快照機制-immutable-block-snapshot)
+    - [2.5 簡易生命週期審計日誌 (Activity Audit Log)](#25-簡易生命週期審計日誌-activity-audit-log)
+    - [2.6 封存卡片彈跳視窗 (Archived Card Modal)](#26-封存卡片彈跳視窗-archived-card-modal)
+  - [3. 版本歷史更新紀錄 (Release History / Changelog)](#3-版本歷史更新紀錄-release-history--changelog)
+    - [v0.2.15 (2026-09-30)](#v0215-2026-09-30)
+    - [v0.2.14 (2026-09-15)](#v0214-2026-09-15)
+    - [v0.2.13 (2026-09-15)](#v0213-2026-09-15)
+    - [v0.2.12 (2026-09-15)](#v0212-2026-09-15)
+    - [v0.2.11 (2026-09-15)](#v0211-2026-09-15)
+    - [v0.2.10 (2026-09-15)](#v0210-2026-09-15)
+    - [v0.2.9 (2026-09-15)](#v029-2026-09-15)
+    - [v0.2.8 (2026-09-14)](#v028-2026-09-14)
+    - [v0.2.7 (2026-09-14)](#v027-2026-09-14)
+    - [v0.2.6 (早期版本)](#v026-早期版本)
+  - [4. 測試範本指引 (Sample Kanban Template)](#4-測試範本指引-sample-kanban-template)
+    - [測試方式](#測試方式)
+  - [5. Monorepo 架構 (Architecture)](#5-monorepo-架構-architecture)
+  - [6. 開發環境需求與設置 (Environment Setup)](#6-開發環境需求與設置-environment-setup)
+    - [快速初始化指令](#快速初始化指令)
+  - [7. 常用開發指令 (Development Commands)](#7-常用開發指令-development-commands)
+    - [擴充套件專用指令](#擴充套件專用指令)
+    - [全專案通用指令](#全專案通用指令)
+  - [8. VS Code Extension 除錯指南 (Debugging in VS Code)](#8-vs-code-extension-除錯指南-debugging-in-vs-code)
+  - [9. 維護與變更指引 (Maintenance Guide)](#9-維護與變更指引-maintenance-guide)
+    - [新增或修改資料結構流程](#新增或修改資料結構流程)
 
 ---
 
