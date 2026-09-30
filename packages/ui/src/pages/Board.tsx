@@ -483,6 +483,7 @@ const Board = ({ isBackground = false }: Properties) => {
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
+        onDragCancel={onDragCancel}
       >
         <Contents>
           <ScrollContainer
