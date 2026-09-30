@@ -79,6 +79,7 @@ const groups: Group[] = [
       { keys: 'c', description: 'Open Archived Cards (no card hovered)' },
       { keys: 'l', description: 'Open Archived List' },
       { keys: 'Esc', description: 'Clear selection' },
+      { keys: 'Ctrl/Cmd+Wheel', description: 'Zoom layout (saved in file)' },
     ],
   },
   {

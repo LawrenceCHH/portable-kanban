@@ -38,29 +38,20 @@ const App = () => {
   }, [zoom]);
 
   React.useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey) {
-        return;
-      }
-      let next: number | undefined;
-      if (e.key === '+' || e.key === '=') {
-        next = zoom + ZOOM_STEP;
-      } else if (e.key === '-' || e.key === '_') {
-        next = zoom - ZOOM_STEP;
-      } else if (e.key === '0') {
-        next = 1;
-      }
-      if (next === undefined) {
+    const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.deltaY === 0) {
         return;
       }
       e.preventDefault();
-      const clamped = clampZoom(next);
+      const clamped = clampZoom(zoom + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
       if (clamped !== zoom) {
         updateSettings({ ...settings, zoom: clamped === 1 ? undefined : clamped });
       }
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      window.removeEventListener('wheel', onWheel);
+    };
   }, [zoom, settings, updateSettings]);
 
   React.useEffect(() => {
