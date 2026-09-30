@@ -633,6 +633,27 @@ export const deleteLabel = (lists: List[], list: List, card: Card, id: string): 
   );
 };
 
+export const updateLabelEverywhere = (lists: List[], label: Label): List[] => {
+  if (!label.title) {
+    return lists;
+  }
+
+  return lists.map((l) => ({
+    ...l,
+    cards: l.cards.map((c) =>
+      c.labels.some((x) => x.id === label.id)
+        ? { ...c, labels: c.labels.map((x) => (x.id === label.id ? label : x)) }
+        : c,
+    ),
+  }));
+};
+
+export const deleteLabelEverywhere = (lists: List[], id: string): List[] =>
+  lists.map((l) => ({
+    ...l,
+    cards: l.cards.map((c) => (c.labels.some((x) => x.id === id) ? { ...c, labels: c.labels.filter((x) => x.id !== id) } : c)),
+  }));
+
 export const addComments = (lists: List[], list: List, card: Card, comment: Comment): List[] => {
   if (!comment.comment) {
     return lists;

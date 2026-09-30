@@ -21,6 +21,7 @@ import {
   deleteCheckBox,
   deleteComments,
   deleteLabel,
+  deleteLabelEverywhere,
   type Kanban,
   type Label,
   type List,
@@ -40,6 +41,7 @@ import {
   updateCheckBox,
   updateComments,
   updateLabel,
+  updateLabelEverywhere,
   updateList,
 } from 'portable-kanban-core';
 
@@ -509,6 +511,24 @@ export const kanbanActions = {
     return React.useCallback(
       (list: List, card: Card, id: string) => {
         setLists(deleteLabel(lists, list, card, id));
+      },
+      [lists, setLists],
+    );
+  },
+  useUpdateLabelEverywhere() {
+    const [lists, setLists] = useAtom(listsAtom);
+    return React.useCallback(
+      (label: Label) => {
+        setLists(updateLabelEverywhere(lists, label));
+      },
+      [lists, setLists],
+    );
+  },
+  useDeleteLabelEverywhere() {
+    const [lists, setLists] = useAtom(listsAtom);
+    return React.useCallback(
+      (id: string) => {
+        setLists(deleteLabelEverywhere(lists, id));
       },
       [lists, setLists],
     );

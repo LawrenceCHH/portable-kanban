@@ -63,9 +63,10 @@ type Properties = {
 export const LabelSelect = ({ list, card }: Properties) => {
   const kanban = selectors.useKanban();
   const addLabel = kanbanActions.useAddLabel();
-  const updateLabel = kanbanActions.useUpdateLabel();
   const updateSettings = kanbanActions.useUpdateSettings();
   const deleteLabel = kanbanActions.useDeleteLabel();
+  const updateLabelEverywhere = kanbanActions.useUpdateLabelEverywhere();
+  const deleteLabelEverywhere = kanbanActions.useDeleteLabelEverywhere();
   const [showEditLabel, setShowEditLabel] = React.useState<{
     label?: Label;
     show: boolean;
@@ -91,24 +92,24 @@ export const LabelSelect = ({ list, card }: Properties) => {
 
   const handleEdit = React.useCallback(
     (label: Label) => {
-      updateLabel(list, card, label);
+      updateLabelEverywhere(label);
       updateSettings({
         labels: kanban.settings.labels.map((l) => (l.id === label.id ? label : l)),
       });
       setShowEditLabel({ show: false });
     },
-    [kanban.settings.labels, updateLabel, list, card, updateSettings],
+    [kanban.settings.labels, updateLabelEverywhere, updateSettings],
   );
 
   const handleDelete = React.useCallback(
     (label: Label) => {
-      deleteLabel(list, card, label.id);
+      deleteLabelEverywhere(label.id);
       updateSettings({
         labels: kanban.settings.labels.filter((l) => l.id !== label.id),
       });
       setShowEditLabel({ show: false });
     },
-    [kanban.settings.labels, deleteLabel, list, card, updateSettings],
+    [kanban.settings.labels, deleteLabelEverywhere, updateSettings],
   );
 
   const sortedLabels = React.useMemo(
