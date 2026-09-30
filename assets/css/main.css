@@ -1,4 +1,6 @@
 :root {
+  --vh: 100vh;
+  --vw: 100vw;
   --list-width: 272px;
   --header-height: 56px;
   --border-radius: 0.25rem;

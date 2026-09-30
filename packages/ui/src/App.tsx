@@ -7,7 +7,12 @@ import { ArchiveLists } from './pages/ArchiveLists';
 import { Board } from './pages/Board';
 import { EditCard } from './pages/EditCard';
 import { Filter } from './pages/Filter';
-import { actions, selectors, setIsLoadingFromFile } from './store';
+import { actions, kanbanActions, selectors, setIsLoadingFromFile } from './store';
+
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2;
+const ZOOM_STEP = 0.1;
+const clampZoom = (z: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z * 10) / 10));
 
 const App = () => {
   const location = useLocation();
@@ -18,6 +23,45 @@ const App = () => {
   const settings = selectors.useSettings();
   const setKanban = actions.useSetKanban();
   const setTitle = actions.useSetTitle();
+  const updateSettings = kanbanActions.useUpdateSettings();
+  const zoom = clampZoom(settings.zoom ?? 1);
+
+  // Scale the whole UI; --vh/--vw are compensated so 100vh/100vw layouts still fit the viewport.
+  React.useEffect(() => {
+    const root = document.getElementById('root');
+    if (!root) {
+      return;
+    }
+    root.style.setProperty('zoom', String(zoom));
+    root.style.setProperty('--vh', `calc(100vh / ${zoom})`);
+    root.style.setProperty('--vw', `calc(100vw / ${zoom})`);
+  }, [zoom]);
+
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) {
+        return;
+      }
+      let next: number | undefined;
+      if (e.key === '+' || e.key === '=') {
+        next = zoom + ZOOM_STEP;
+      } else if (e.key === '-' || e.key === '_') {
+        next = zoom - ZOOM_STEP;
+      } else if (e.key === '0') {
+        next = 1;
+      }
+      if (next === undefined) {
+        return;
+      }
+      e.preventDefault();
+      const clamped = clampZoom(next);
+      if (clamped !== zoom) {
+        updateSettings({ ...settings, zoom: clamped === 1 ? undefined : clamped });
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [zoom, settings, updateSettings]);
 
   React.useEffect(() => {
     const onMessage = async (error: MessageEvent<{ type: 'update'; text: string; title: string }>) => {

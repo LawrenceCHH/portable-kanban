@@ -47,7 +47,7 @@ declare global {
 
 const Overlay = styled.div`
   width: 100%;
-  height: 100vh;
+  height: var(--vh);
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -58,7 +58,7 @@ const Overlay = styled.div`
 const Container = styled.div`
   position: absolute;
   width: calc(100% - 16px);
-  max-height: calc(100vh - 32px);
+  max-height: calc(var(--vh) - 32px);
   max-width: 748px;
   display: flex;
   flex-direction: column;

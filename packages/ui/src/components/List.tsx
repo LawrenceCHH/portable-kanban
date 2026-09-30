@@ -314,7 +314,7 @@ export const List = ({ kanban, list, dragHandleListeners, dragHandleAttributes }
           <div
             data-list-scroll
             style={{
-              maxHeight: 'calc(100vh - var(--header-height) - 112px)',
+              maxHeight: 'calc(var(--vh) - var(--header-height) - 112px)',
               overflowY: 'auto',
             }}
           >

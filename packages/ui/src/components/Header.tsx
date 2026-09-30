@@ -16,7 +16,7 @@ type Props = {
 };
 
 const Container = styled.div`
-  width: 100vw;
+  width: var(--vw);
   height: var(--header-height);
   display: flex;
   align-items: center;

@@ -36,7 +36,7 @@ import { uuid } from 'portable-kanban-core';
 
 const Container = styled.div`
   width: 100%;
-  height: 100vh;
+  height: var(--vh);
   display: flex;
   flex-direction: column;
   background-color: var(--main-background-color);
@@ -44,7 +44,7 @@ const Container = styled.div`
 
 const Contents = styled.div`
   width: 100%;
-  height: calc(100vh - var(--header-height));
+  height: calc(var(--vh) - var(--header-height));
   display: flex;
   background-color: transparent;
   overflow-x: auto;
@@ -592,7 +592,7 @@ const Board = ({ isBackground = false }: Properties) => {
             mouseScroll={{ ignoreElements: '.list' }}
             style={{
               width: '100%',
-              height: 'calc(100vh - var(--header-height))',
+              height: 'calc(var(--vh) - var(--header-height))',
               display: 'flex',
               backgroundColor: 'transparent',
               overflowX: 'auto',

@@ -2,6 +2,7 @@ import {
   array,
   boolean,
   constant,
+  number,
   type Decoder,
   object,
   optional,
@@ -18,6 +19,7 @@ export type Kanban = {
 
 export type Settings = {
   labels: Label[];
+  zoom?: number;
 };
 
 export type List = {
@@ -811,6 +813,7 @@ const archiveListDecoder: Decoder<ArchiveList> = object({
 
 const settingsDecoder: Decoder<Settings> = object({
   labels: array(labelDecoder),
+  zoom: optional(number()),
 });
 
 const kanbanDecoder: Decoder<Kanban> = object({

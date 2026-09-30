@@ -8,7 +8,7 @@ import { actions, selectors } from '../store';
 
 const Overlay = styled.div`
   width: 100%;
-  height: 100vh;
+  height: var(--vh);
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -23,7 +23,7 @@ const Container = styled.div`
   color: var(--text-color);
   background-color: var(--primary-background-color);
   width: 192px;
-  height: calc(100vh - var(--header-height));
+  height: calc(var(--vh) - var(--header-height));
   padding: 16px;
   overflow-y: scroll;
 `;

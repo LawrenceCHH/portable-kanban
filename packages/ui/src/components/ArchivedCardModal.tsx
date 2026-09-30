@@ -19,8 +19,8 @@ import { Button } from './shared/Button';
 import { ConfirmDialog } from './shared/ConfirmDialog';
 
 const Overlay = styled.div`
-  width: 100vw;
-  height: 100vh;
+  width: var(--vw);
+  height: var(--vh);
   position: fixed;
   display: flex;
   flex-direction: column;
@@ -33,7 +33,7 @@ const Overlay = styled.div`
 const Container = styled.div`
   position: absolute;
   width: calc(100% - 32px);
-  max-height: calc(100vh - 48px);
+  max-height: calc(var(--vh) - 48px);
   max-width: 720px;
   display: flex;
   flex-direction: column;
