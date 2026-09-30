@@ -282,6 +282,42 @@ const Board = ({ isBackground = false }: Properties) => {
         return;
       }
 
+      // ArrowUp / ArrowDown: move selected cards one position within their list
+      if (!isCtrlOrCmd && !e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        if (selectedCardIds.length > 0) {
+          e.preventDefault();
+          const up = e.key === 'ArrowUp';
+          const selected = new Set(selectedCardIds);
+          let changed = false;
+          const next = lists.map((l) => {
+            const cards = [...l.cards];
+            const isSel = (c: CardModel) => selected.has(getCardUid(c));
+            if (!cards.some(isSel)) return l;
+            const order = cards.map((_, i) => i);
+            if (!up) order.reverse();
+            for (const i of order) {
+              const j = up ? i - 1 : i + 1;
+              if (isSel(cards[i]) && j >= 0 && j < cards.length && !isSel(cards[j])) {
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+                changed = true;
+              }
+            }
+            return { ...l, cards };
+          });
+          if (changed) {
+            setLists(next);
+            const targetId = selectedCardIds[up ? 0 : selectedCardIds.length - 1];
+            requestAnimationFrame(() => {
+              const el = Array.from(document.querySelectorAll('[data-card-id]')).find((n) =>
+                (n as HTMLElement).dataset.cardId === targetId,
+              );
+              el?.scrollIntoView({ block: 'nearest' });
+            });
+          }
+        }
+        return;
+      }
+
       // Escape: clear selection
       if (e.key === 'Escape') {
         if (selectedCardIds.length > 0) {
@@ -299,6 +335,7 @@ const Board = ({ isBackground = false }: Properties) => {
     selectedCardIds,
     hoveredCardInfo,
     lists,
+    setLists,
     clearSelectedCards,
     archiveCards,
     deleteActiveCard,
@@ -309,6 +346,50 @@ const Board = ({ isBackground = false }: Properties) => {
     location,
     isBackground,
   ]);
+
+  // Pointer-based auto-scroll while dragging: scrolls the list under the pointer
+  // (vertical) and the board (horizontal) when the pointer nears an edge.
+  React.useEffect(() => {
+    if (!activeDrag) return undefined;
+    const pointer = { x: -1, y: -1 };
+    const onMove = (e: PointerEvent) => {
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+    };
+    const speed = (dist: number, zone: number) => Math.ceil(((zone - dist) / zone) * 20);
+    let raf = 0;
+    const tick = () => {
+      if (pointer.x >= 0) {
+        if (activeDrag.type === 'card') {
+          const scrollers = Array.from(document.querySelectorAll<HTMLElement>('[data-list-scroll]'));
+          const target = scrollers.find((el) => {
+            const r = el.getBoundingClientRect();
+            return pointer.x >= r.left && pointer.x <= r.right;
+          });
+          if (target) {
+            const r = target.getBoundingClientRect();
+            const zone = Math.min(80, r.height / 3);
+            if (pointer.y < r.top + zone) target.scrollTop -= speed(Math.max(pointer.y - r.top, 0), zone);
+            else if (pointer.y > r.bottom - zone) target.scrollTop += speed(Math.max(r.bottom - pointer.y, 0), zone);
+          }
+        }
+        const board = document.querySelector<HTMLElement>('[data-board-scroll]');
+        if (board) {
+          const r = board.getBoundingClientRect();
+          const zone = 60;
+          if (pointer.x < r.left + zone) board.scrollLeft -= speed(Math.max(pointer.x - r.left, 0), zone);
+          else if (pointer.x > r.right - zone) board.scrollLeft += speed(Math.max(r.right - pointer.x, 0), zone);
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    window.addEventListener('pointermove', onMove);
+    raf = requestAnimationFrame(tick);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      cancelAnimationFrame(raf);
+    };
+  }, [activeDrag]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const listIds = React.useMemo(() => lists.map((l) => l.id), [lists]);
@@ -499,6 +580,7 @@ const Board = ({ isBackground = false }: Properties) => {
       <DndContext
         sensors={sensors}
         collisionDetection={collisionDetection}
+        autoScroll={false}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
@@ -506,6 +588,7 @@ const Board = ({ isBackground = false }: Properties) => {
       >
         <Contents>
           <ScrollContainer
+            data-board-scroll
             mouseScroll={{ ignoreElements: '.list' }}
             style={{
               width: '100%',

@@ -113,7 +113,7 @@ const SortableCardItem = ({ card, listId }: SortableCardItemProps) => {
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} data-card-id={card.id} {...attributes} {...listeners}>
       <Card key={getCardUid(card)} card={card} />
     </div>
   );
@@ -312,6 +312,7 @@ export const List = ({ kanban, list, dragHandleListeners, dragHandleAttributes }
             </div>
           </Header>
           <div
+            data-list-scroll
             style={{
               maxHeight: 'calc(100vh - var(--header-height) - 112px)',
               overflowY: 'auto',
